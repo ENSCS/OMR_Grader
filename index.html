@@ -6,63 +6,63 @@
 <title>ตรวจข้อสอบ OMR</title>
 <style>
 :root{
-  --bg:#f5f7f6;--card:#fff;--ink:#1c2b24;--mut:#667a70;--line:#dbe4df;
-  --brand:#1f8a5b;--brand-d:#166a45;--warn:#b45309;--warn-bg:#fef3c7;--bad:#b91c1c;--bad-bg:#fee2e2;--ok-bg:#dcfce7;--blue:#2563eb;
-}
-@media (prefers-color-scheme:dark){
-  :root{--bg:#121a16;--card:#1a2420;--ink:#e6efe9;--mut:#93a89c;--line:#2b3a33;--brand:#34b27b;--brand-d:#2a9566;--warn:#fbbf24;--warn-bg:#3a2e0b;--bad:#f87171;--bad-bg:#3b1515;--ok-bg:#123a24;--blue:#60a5fa}
+  /* พาเลตต์จากดีไซน์ SAP: น้ำเงินเป็นสีเดียวที่ "ทำงาน", พื้นเป็นแถบเรียบ */
+  --bg:#f5f6f7;--card:#fff;--ink:#223548;--mut:#475e75;--line:rgba(71,94,117,.25);
+  --brand:#0057d2;--brand-d:#0040b0;--warn:#8a4b00;--warn-bg:#fff4e0;--bad:#b00020;--bad-bg:#fde8ea;--ok-bg:#ebf8ff;--blue:#0057d2;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.55 -apple-system,"Sukhumvit Set","Thonburi","Sarabun",system-ui,sans-serif}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif}
+h1,h2,h3{color:#000}
+input{accent-color:var(--brand)}
 header{padding:18px 20px 6px;max-width:1200px;margin:auto}
-header h1{margin:0;font-size:22px}
-header p{margin:2px 0 0;color:var(--mut);font-size:13px}
+header h1{margin:0;font-size:30px}
+header p{margin:2px 0 0;color:var(--mut);font-size:16px}
 main{max-width:1200px;margin:auto;padding:8px 20px 60px;display:grid;gap:16px}
 .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
 .card.locked{opacity:.45;pointer-events:none}
-h2{margin:0 0 12px;font-size:17px;display:flex;align-items:center;gap:10px}
-h2 .num{background:var(--brand);color:#fff;width:26px;height:26px;border-radius:50%;display:inline-grid;place-items:center;font-size:14px}
-h3{font-size:14px;margin:16px 0 6px}
+h2{margin:0 0 14px;font-size:22px;display:flex;align-items:center;gap:10px}
+h2 .num{background:var(--brand);color:#fff;width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;font-size:17px}
+h3{font-size:17px;margin:16px 0 6px}
 .row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
-.btn{display:inline-block;background:var(--brand);color:#fff;border:0;border-radius:8px;padding:8px 16px;font:inherit;cursor:pointer}
+.btn{display:inline-block;background:var(--brand);color:#fff;border:0;border-radius:8px;padding:10px 20px;font:inherit;cursor:pointer}
 .btn:hover{background:var(--brand-d)}
 .btn.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
 .btn.sec:hover{background:var(--bg)}
 .btn[disabled]{opacity:.45;pointer-events:none}
-.mut{color:var(--mut);font-size:13px}
+.mut{color:var(--mut);font-size:15px}
 details{margin-top:10px}
-summary{cursor:pointer;color:var(--mut);font-size:13px}
+summary{cursor:pointer;color:var(--mut);font-size:15px}
 .settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:10px}
-.settings label{display:grid;gap:4px;font-size:13px}
-select,input[type=text]{font:inherit;padding:5px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.settings label{display:grid;gap:4px;font-size:15px}
+select,input[type=text]{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
 .viewer{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:78vh;background:#888;margin-top:10px}
 .viewer canvas{display:block;width:var(--zoom,100%)}
 .grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
 @media(min-width:900px){.grid2.split{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}}
-table{border-collapse:collapse;width:100%;font-size:13.5px}
+table{border-collapse:collapse;width:100%;font-size:15.5px}
 th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
 th{position:sticky;top:0;background:var(--card);font-weight:600;color:var(--mut)}
 tbody tr.click{cursor:pointer}
 tbody tr.click:hover{background:var(--bg)}
 tr.sel{background:var(--ok-bg)}
 .tblwrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px}
-.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:12px}
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:14px}
 .badge.ok{background:var(--ok-bg);color:var(--brand-d)}
 .badge.warn{background:var(--warn-bg);color:var(--warn)}
 .badge.bad{background:var(--bad-bg);color:var(--bad)}
-.alert{padding:8px 12px;border-radius:8px;font-size:13.5px;margin:6px 0}
+.alert{padding:8px 12px;border-radius:8px;font-size:15.5px;margin:6px 0}
 .alert.warn{background:var(--warn-bg);color:var(--warn)}
 .alert.bad{background:var(--bad-bg);color:var(--bad)}
 .alert.ok{background:var(--ok-bg);color:var(--brand-d)}
-.ans{display:grid;grid-template-columns:repeat(auto-fill,minmax(62px,1fr));gap:4px;max-height:300px;overflow:auto}
-.ans div{border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:13px;display:flex;justify-content:space-between;gap:6px}
+.ans{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:4px;max-height:300px;overflow:auto}
+.ans div{border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:15px;display:flex;justify-content:space-between;gap:6px}
 .ans div b{color:var(--brand-d)}
 .ans div.none{opacity:.4}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
-.chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 7px;font-size:12px}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:14px}
 .bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
 .bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .15s}
-.legend{display:flex;flex-wrap:wrap;gap:12px;font-size:12.5px;color:var(--mut);margin-top:6px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--mut);margin-top:6px}
 .legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px;border:2px solid;background:var(--c,transparent);border-color:var(--b)}
 .pill{display:inline-flex;align-items:center;gap:6px}
 </style>
