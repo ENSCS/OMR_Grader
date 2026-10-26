@@ -101,6 +101,12 @@ tr.sel{background:var(--ok-bg)}
         <select id="pOpt"><option value="num">1 2 3 4 5</option><option value="thai">ก ข ค ง จ</option><option value="latin">A B C D E</option></select>
       </label>
     </div>
+    <div id="prevBox">
+      <h3>ตัวอย่างผลตามค่าที่ปรับ <span class="mut">(อัปเดตทันทีที่เลื่อน)</span></h3>
+      <canvas id="prevCv" style="max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></canvas>
+      <div class="mut" id="prevCap"></div>
+      <div class="mut"><b>ซ้าย</b> = ภาพจริง วงเขียว = ช่องที่อ่านว่าฝน (ปรับด้วย "เกณฑ์ความเข้ม") · <b>ขวา</b> = สิ่งที่โปรแกรมมองเห็นเป็นเส้น วงเขียว = วงกลมที่หาเจอ (ปรับด้วย "ความไวต่อขอบ")</div>
+    </div>
     <div class="row" style="margin-top:10px"><button class="btn sec" id="reKey" disabled>วิเคราะห์เฉลยใหม่</button></div>
   </details>
 
@@ -558,6 +564,83 @@ async function drawStudent(rec){
 
 /* ---------- UI: ขั้นที่ 1 ---------- */
 function showAlert(el, kind, text){ el.innerHTML=`<div class="alert ${kind}">${text}</div>`; }
+/* ปรับค่าแล้วอัปเดตเฉลยทันที (ink = หาวงกลมใหม่ ช้ากว่า จึงหน่วงเวลาเล็กน้อย) */
+let liveTimer=null, liveBusy=false, livePending=null;
+function live(kind){
+  if (!S.keyRaw){ clearTimeout(liveTimer); liveTimer=setTimeout(()=>{ demoUpdate(kind==='ink'); drawPreview(); }, 30); return; }
+  livePending = (livePending==='ink'||kind==='ink') ? 'ink' : kind;
+  clearTimeout(liveTimer); liveTimer=setTimeout(runLive, kind==='ink'?200:30);
+}
+async function runLive(){
+  if (liveBusy){ liveTimer=setTimeout(runLive,100); return; }
+  const kind=livePending; livePending=null; liveBusy=true;
+  try{
+    if (kind==='ink'){
+      const an=analyze(S.keyRaw,true);
+      if (an.det.circles.length<20){ $('#prevBox').hidden=false; $('#prevCap').textContent=`ค่านี้หาวงกลมได้เพียง ${an.det.circles.length} ช่อง — ลองปรับความไวใหม่`; return; }
+      S.keyAn=an;
+    }
+    if (S.keyAn){ S.key=analyzeKey(S.keyAn); renderKey(); }
+  } finally { liveBusy=false; if (livePending) live(livePending); }
+}
+/* ภาพสาธิต (ก่อนอัปโหลดเฉลย): วาดวงกลม 5×5 พร้อมรอยฝนหลายระดับ แล้วใช้ตัวอ่านเดียวกับของจริง */
+const DEMO={ canvas:null, an:null, K:null };
+function makeDemoCanvas(){
+  const c=document.createElement('canvas'); c.width=800; c.height=420; const x=c.getContext('2d',{willReadFrequently:true});
+  x.fillStyle='#fdfdfb'; x.fillRect(0,0,800,420);
+  const px=c2=>60+c2*24, py=r=>60+r*22, Rr=8;
+  x.font='8px sans-serif'; x.textAlign='center'; x.textBaseline='middle';
+  for (let r=0;r<5;r++) for (let k=0;k<5;k++){
+    const faint=k===4;   // คอลัมน์ขวาสุด: วงกลมจาง (เลียนแบบเส้นพิมพ์จางหรือสแกนอ่อน)
+    x.beginPath(); x.arc(px(k),py(r),Rr,0,7); x.lineWidth=1.3; x.strokeStyle=faint?'rgb(195,226,208)':'rgb(110,185,140)'; x.stroke();
+    x.fillStyle=faint?'rgb(195,226,208)':'rgb(90,170,120)'; x.fillText(String(k+1),px(k),py(r)+.5);
+  }
+  const mark=(r,k,a)=>{ x.beginPath(); x.arc(px(k),py(r),Rr+.4,0,7); x.fillStyle=`rgba(70,70,70,${a})`; x.fill(); };
+  mark(0,1,.85);   // ฝนเข้ม
+  mark(1,2,.45);   // ฝนปานกลาง
+  mark(2,3,.22);   // ฝนจาง
+  mark(3,0,.85); mark(3,2,.12);   // ฝนเข้ม + รอยลบจางๆ ในข้อเดียวกัน
+  return c;
+}
+function demoUpdate(redetect){
+  if (!DEMO.canvas) DEMO.canvas=makeDemoCanvas();
+  if (redetect||!DEMO.an) DEMO.an=analyze(DEMO.canvas,true);
+  DEMO.K = DEMO.an.det.circles.length>=5 ? analyzeKey(DEMO.an) : null;
+}
+/* กล่องตัวอย่าง: ตัดภาพบางส่วนของบล็อกแรก แสดงภาพจริงเทียบกับสิ่งที่โปรแกรมมองเห็น */
+function drawPreview(){
+  const real=!!(S.keyAn&&S.key), box=$('#prevBox');
+  if (!real&&!DEMO.an) demoUpdate(true);
+  const an=real?S.keyAn:DEMO.an, K=real?S.key:DEMO.K;
+  box.hidden=false;
+  if (!K){ $('#prevCv').width=1; $('#prevCap').textContent='ค่านี้หาวงกลมไม่เจอเลย — ลองลดหรือเพิ่มความไวต่อขอบวงกลม'; return; }
+  const b=K.answers[0]||K.blocks[0], D=K.D, r1=Math.min(b.rows.length-1,5);
+  const x0=Math.max(0,b.cols[0]-1.4*D), y0=Math.max(0,b.rows[0]-1.4*D);
+  const x1=Math.min(an.canvas.width,b.cols[b.cols.length-1]+1.4*D), y1=Math.min(an.canvas.height,b.rows[r1]+1.4*D);
+  const w=Math.round(x1-x0), h=Math.round(y1-y0), sc=Math.min(3,330/w), pw=Math.round(w*sc), ph=Math.round(h*sc);
+  const cv=$('#prevCv'); cv.width=pw*2+12; cv.height=ph; const ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(an.canvas,x0,y0,w,h,0,0,pw,ph);                       // ซ้าย: ภาพจริง
+  const R=D/2*sc*0.95, lw=Math.max(1.5,R/6);
+  let on=0;
+  for (const row of b.cells.slice(0,r1+1)) for (const c of row){
+    const m=c.delta>=P.thr; if (m) on++;
+    ctx.beginPath(); ctx.arc((c.x-x0)*sc,(c.y-y0)*sc,R,0,7);
+    if (m){ ctx.fillStyle='rgba(34,197,94,.5)'; ctx.fill(); ctx.strokeStyle='#16a34a'; } else ctx.strokeStyle='rgba(110,110,110,.8)';
+    ctx.lineWidth=lw; ctx.stroke();
+  }
+  if (an.det.d){                                                       // ขวา: ภาพ binary ของตัวหาวงกลม
+    const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d'), id=tc.createImageData(w,h), W=an.canvas.width;
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++){ const v=an.det.d[(Math.round(y0)+y)*W+Math.round(x0)+x]?40:255, i=(y*w+x)*4; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; }
+    tc.putImageData(id,0,0); ctx.imageSmoothingEnabled=false; ctx.drawImage(t,0,0,w,h,pw+12,0,pw,ph);
+    ctx.strokeStyle='#16a34a'; ctx.lineWidth=lw;
+    for (const c of K.circles){ if (c.x<x0||c.x>x1||c.y<y0||c.y>y1) continue; ctx.beginPath(); ctx.arc(pw+12+(c.x-x0)*sc,(c.y-y0)*sc,R*1.12,0,7); ctx.stroke(); }
+  }
+  const tot=b.cells.slice(0,r1+1).reduce((a,r)=>a+r.length,0);
+  $('#prevCap').textContent = real
+    ? `ตัวอย่างนี้: ฝน ${on} จาก ${tot} ช่อง · ทั้งหน้าพบวงกลม ${K.circles.length} ช่อง · คะแนนเต็ม ${K.graded.length} ข้อ`
+    : `ภาพสาธิต (ยังไม่ได้อัปโหลดเฉลย) — แถว 1 ฝนเข้ม · แถว 2 ปานกลาง · แถว 3 จาง · แถว 4 ฝนเข้ม + รอยลบจางๆ · คอลัมน์ขวาสุด = วงกลมจาง · ตอนนี้ฝน ${on} ช่อง, พบวงกลม ${K.circles.length} จาก 25 ช่อง`;
+}
 function renderKey(){
   const K=S.key; $('#keyOut').hidden=false;
   const parts=[`พบวงกลม <b>${K.circles.length}</b> ช่อง ขนาดประมาณ ${K.D.toFixed(0)} px แบ่งเป็น <b>${K.blocks.length}</b> บล็อก`,
@@ -572,7 +655,7 @@ function renderKey(){
   $('#ansCount').textContent=`(${K.graded.length} ข้อ)`;
   $('#ansGrid').innerHTML=Array.from({length:K.nq},(_,i)=>i+1).map(q=>byQ.has(q)?`<div><span>${q}</span><b>${esc(optLabel(byQ.get(q)))}</b></div>`:`<div class="none"><span>${q}</span><b>–</b></div>`).join('');
   $('#keyViewer').style.setProperty('--zoom',$('#keyZoom').value);
-  drawKey(); setConfirmed(false);
+  drawKey(); drawPreview(); setConfirmed(false);
 }
 function setConfirmed(v){
   S.confirmed=v; $('#s2').classList.toggle('locked',!v);
@@ -603,10 +686,10 @@ $('#confirmKey').onclick=()=>{ setConfirmed(true); $('#s2').scrollIntoView({beha
 $('#keyZoom').onchange=e=>$('#keyViewer').style.setProperty('--zoom',e.target.value);
 $('#keyDebug').onchange=()=>{ if (S.keyAn) drawKey(); };
 $('#pDpi').onchange=e=>{ P.dpi=+e.target.value; if (S.keyFile){ S.keyRaw=null; } };
-$('#pInk').oninput=e=>{ P.ink=+e.target.value; $('#vInk').textContent=P.ink.toFixed(2); };
-$('#pThr').oninput=e=>{ P.thr=+e.target.value; $('#vThr').textContent=Math.round(P.thr*100)+'%'; };
+$('#pInk').oninput=e=>{ P.ink=+e.target.value; $('#vInk').textContent=P.ink.toFixed(2); live('ink'); };
+$('#pThr').oninput=e=>{ P.thr=+e.target.value; $('#vThr').textContent=Math.round(P.thr*100)+'%'; live('thr'); };
 $('#pOpt').onchange=e=>{ P.opt=e.target.value; if (S.key) renderKey(); };
-for (const id of ['#pInk','#pThr','#pDpi']) $(id).addEventListener('change',()=>{ if (S.keyFile) runKey(); });
+for (const id of ['#pDpi']) $(id).addEventListener('change',()=>{ if (S.keyFile) runKey(); });
 
 /* ---------- UI: ขั้นที่ 2 ---------- */
 function columns(){
@@ -673,6 +756,7 @@ $('#dlCsv').onclick=()=>{
   const url=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
   const a=document.createElement('a'); a.href=url; a.download='omr-results.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
 };
+drawPreview();
 </script>
 </body>
 </html>
