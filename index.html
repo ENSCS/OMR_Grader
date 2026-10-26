@@ -202,19 +202,27 @@ const S = { keyFile:null, keyRaw:null, keyAn:null, key:null, confirmed:false, st
 const optLabel = i => P.opt==='thai' ? ('กขคงจฉชซฌญ'[i] || i+1) : P.opt==='latin' ? String.fromCharCode(65+i) : String(i+1);
 
 /* ---------- โหลด PDF.js (ลอง lib/ ในโฟลเดอร์ก่อน แล้วค่อยไป CDN) ---------- */
+// ลองอินเทอร์เน็ต (CDN) ก่อน ถ้าไม่ได้/ออฟไลน์ ใช้ไฟล์ในโฟลเดอร์ lib/ แทน
 const LIBS = {
-  js:['lib/pdf.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js'],
-  worker:['lib/pdf.worker.min.js','https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js']
+  js:['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','lib/pdf.min.js'],
+  worker:['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js','lib/pdf.worker.min.js']
 };
 let pdfReady = null;
-const loadScript = url => new Promise((res, rej) => { const s=document.createElement('script'); s.src=url; s.onload=res; s.onerror=()=>rej(new Error(url)); document.head.appendChild(s); });
+const LOAD_TIMEOUT = 6000;   // เน็ตค้าง/ช้ามาก → ข้ามไปใช้ lib/
+const loadScript = url => new Promise((res, rej) => {
+  const s=document.createElement('script'), t=setTimeout(()=>{ s.remove(); rej(new Error('timeout '+url)); }, LOAD_TIMEOUT);
+  s.src=url; s.onload=()=>{ clearTimeout(t); res(); }; s.onerror=()=>{ clearTimeout(t); rej(new Error(url)); }; document.head.appendChild(s);
+});
 function ensurePdfJs(){
   if (window.pdfjsLib) return Promise.resolve();
   if (!pdfReady) pdfReady = (async () => {
     for (const u of LIBS.js){ try { await loadScript(u); if (window.pdfjsLib) break; } catch(e){} }
     if (!window.pdfjsLib) throw new Error('โหลด PDF.js ไม่สำเร็จ — ต้องต่ออินเทอร์เน็ต หรือวางไฟล์ไว้ในโฟลเดอร์ lib/ (pdf.min.js, pdf.worker.min.js)');
     let blob = null;
-    for (const u of LIBS.worker){ try { const r = await fetch(u); if (r.ok){ blob = URL.createObjectURL(new Blob([await r.text()], {type:'text/javascript'})); break; } } catch(e){} }
+    for (const u of LIBS.worker){ try { const r = await fetch(u, { signal:AbortSignal.timeout(LOAD_TIMEOUT) }); if (r.ok){ blob = URL.createObjectURL(new Blob([await r.text()], {type:'text/javascript'})); break; } } catch(e){} }
+    if (!blob){   // เปิดแบบ file:// แล้ว fetch ไม่ได้ → โหลด worker เป็น script ธรรมดา (PDF.js จะรันแทนในหน้าหลัก)
+      for (const u of LIBS.worker){ try { await loadScript(u); if (window.pdfjsWorker) break; } catch(e){} }
+    }
     pdfjsLib.GlobalWorkerOptions.workerSrc = blob || LIBS.worker[1];
   })().catch(e => { pdfReady = null; throw e; });
   return pdfReady;
