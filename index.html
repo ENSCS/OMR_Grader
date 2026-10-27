@@ -184,7 +184,7 @@ tr.sel{background:var(--ok-bg)}
         <span style="--b:#16a34a;--c:rgba(34,197,94,.5)">ฝนถูก</span>
         <span style="--b:#dc2626;--c:rgba(220,38,38,.45)">ฝนผิด</span>
         <span style="--b:#2563eb">คำตอบที่ถูก (เมื่อฝนผิด/ไม่ฝน)</span>
-        <span style="--b:#0d9488;--c:rgba(13,148,136,.5)">ข้อมูลผู้สอบ / ช่องดิบที่ฝน</span>
+        <span style="--b:#9333ea;--c:rgba(147,51,234,.5)">ข้อมูลผู้สอบ / ช่องดิบที่ฝน</span>
         <span style="--b:#bbb">ช่องว่าง</span>
       </div>
       <div class="viewer"><canvas id="detCanvas"></canvas></div>
@@ -785,7 +785,7 @@ async function drawStudent(rec){
   cv.width=c.width; cv.height=c.height; ctx.drawImage(c,0,0);
   if (!rec.cells.length) return;
   const R=rec.R*.95, lw=Math.max(2,R/5), K=S.key; let i=0;
-  const style={ ok:['rgba(34,197,94,.5)','#16a34a'], bad:['rgba(220,38,38,.45)','#dc2626'], key:[null,'#2563eb'], mark:['rgba(13,148,136,.5)','#0d9488'], blank:[null,'rgba(150,150,150,.6)'], skip:[null,'rgba(150,150,150,.35)'] };
+  const style={ ok:['rgba(34,197,94,.5)','#16a34a'], bad:['rgba(220,38,38,.45)','#dc2626'], key:[null,'#2563eb'], mark:['rgba(147,51,234,.5)','#9333ea'], blank:[null,'rgba(150,150,150,.6)'], skip:[null,'rgba(150,150,150,.35)'] };
   for (const cell of rec.cells){ const [fill,stroke]=style[cell.st]||style.blank; ctx.beginPath(); ctx.arc(cell.x,cell.y,R,0,7); if(fill){ctx.fillStyle=fill;ctx.fill();} ctx.strokeStyle=stroke; ctx.lineWidth=cell.st==='key'?lw*1.4:lw; ctx.stroke(); }
 }
 
