@@ -54,9 +54,11 @@ tr.sel{background:var(--ok-bg)}
 .alert.warn{background:var(--warn-bg);color:var(--warn)}
 .alert.bad{background:var(--bad-bg);color:var(--bad)}
 .alert.ok{background:var(--ok-bg);color:var(--brand-d)}
-.ans{display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:4px;max-height:300px;overflow:auto}
+.ans{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:4px;max-height:300px;overflow:auto}
 .ans div{border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:15px;display:flex;justify-content:space-between;gap:6px}
 .ans div b{color:var(--brand-d)}
+.ans select{font:inherit;font-weight:700;color:var(--brand-d);border:0;background:transparent;padding:0;cursor:pointer;min-width:34px}
+.ans div.edit{background:var(--warn-bg);border-color:var(--warn)}
 .ans div.none{opacity:.4}
 .chips{display:flex;flex-wrap:wrap;gap:4px}
 .chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:14px}
@@ -875,11 +877,29 @@ function renderKey(){
       S.results=[]; $('#stuOut').hidden=true; renderKey();
     }
   };
-  const byQ=new Map(K.graded.map(g=>[g.q,g.col]));
-  $('#ansCount').textContent=`(${K.graded.length} ข้อ)`;
-  $('#ansGrid').innerHTML=Array.from({length:K.nq},(_,i)=>i+1).map(q=>byQ.has(q)?`<div><span>${q}</span><b>${esc(optLabel(byQ.get(q)))}</b></div>`:`<div class="none"><span>${q}</span><b>–</b></div>`).join('');
+  const byQ=new Map(K.graded.map(g=>[g.q,g.col])), nOpt=Math.max(...K.answers.map(b=>b.cols.length));
+  $('#ansCount').textContent=`(${K.graded.length} ข้อ · แก้ไขได้ ช่องสีเหลืองคือข้อที่แก้เอง)`;
+  $('#ansGrid').innerHTML=Array.from({length:K.nq},(_,i)=>i+1).map(q=>{
+    const has=byQ.has(q), cur=has?byQ.get(q):-1;
+    return `<div class="${has?'':'none'}${K.edits&&K.edits.has(q)?' edit':''}"><span>${q}</span><select data-q="${q}"><option value="-1"${cur<0?' selected':''}>–</option>${Array.from({length:nOpt},(_,i)=>`<option value="${i}"${cur===i?' selected':''}>${esc(optLabel(i))}</option>`).join('')}</select></div>`;
+  }).join('');
+  $('#ansGrid').onchange=e=>{ const q=+e.target.dataset.q; if (q) editAnswer(q,+e.target.value); };
   $('#keyViewer').style.setProperty('--zoom',$('#keyZoom').value);
   drawKey(); drawPreview(); setConfirmed(false);
+}
+// แก้เฉลยเองในตาราง (กรณีเฉลยฝนผิด ไม่ต้องสแกนใหม่) — ค่า -1 = ไม่นำมาคิดคะแนน
+function editAnswer(q, col){
+  const K=S.key; let qs=1, tb=null, r=0;
+  for (const b of K.answers){ if (q>=b.qStart && q<b.qStart+b.rows.length){ tb=b; r=q-b.qStart; } }
+  if (!tb) return;
+  if (col>=tb.cols.length) col=-1;
+  tb.keyAns[r]= col<0 ? null : col;
+  K.edits=K.edits||new Set(); K.edits.add(q);
+  K.graded=[]; K.ungraded=[];
+  for (const b of K.answers) b.keyAns.forEach((k,i)=>{ if (k===null) K.ungraded.push(b.qStart+i); else K.graded.push({ q:b.qStart+i, b, r:i, col:k }); });
+  K.warns=K.warns.filter(w=>!/^(เฉลยข้อ|ข้อที่เฉลยไม่ฝน|ข้อที่ไม่นำมาคิดคะแนน)/.test(w));
+  if (K.ungraded.length && K.graded.length) K.warns.push(`ข้อที่ไม่นำมาคิดคะแนน: ${rng(K.ungraded)}`);
+  S.results=[]; $('#stuOut').hidden=true; renderKey();
 }
 function setConfirmed(v){
   S.confirmed=v; $('#s2').classList.toggle('locked',!v);
