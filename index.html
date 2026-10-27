@@ -130,7 +130,7 @@ tr.sel{background:var(--ok-bg)}
     <div class="grid2 split">
       <div>
         <h3>บล็อกที่โปรแกรมพบ <span class="mut">(แก้ชื่อได้ ชื่อจะเป็นหัวคอลัมน์ใน CSV)</span></h3>
-        <div class="tblwrap"><table><thead><tr><th>#</th><th>ประเภท</th><th>ขนาด</th><th>ชื่อ</th></tr></thead><tbody id="blkBody"></tbody></table></div>
+        <div class="tblwrap"><table><thead><tr><th>#</th><th>ประเภท</th><th>ขนาด</th><th>ใส่ใน CSV</th><th>ชื่อคอลัมน์</th></tr></thead><tbody id="blkBody"></tbody></table></div>
       </div>
       <div>
         <h3>เฉลยที่อ่านได้ <span class="mut" id="ansCount"></span></h3>
@@ -270,7 +270,21 @@ function prepare(canvas){
 function detect(prep, ink){
   const { W, H, minCh, paperMin } = prep, N=W*H, thr=paperMin*ink;
   const m = new Uint8Array(N);
-  for (let i=0;i<N;i++) m[i] = minCh[i]<thr ? 1 : 0;
+  // เทียบกับพื้นหลังรอบๆ (ค่าเฉลี่ยในหน้าต่าง) แทนกระดาษทั้งแผ่น — วงบนพื้นชมพูของฟอร์มจะได้ไม่จางหาย
+  const R=Math.max(8,Math.round(0.011*Math.max(W,H))), W1=W+1, ii=new Uint32Array(W1*(H+1));
+  for (let y=0;y<H;y++){ let row=0; const o=y*W, a=(y+1)*W1, b=y*W1; for (let x=0;x<W;x++){ row+=minCh[o+x]; ii[a+x+1]=(ii[b+x+1]+row)>>>0; } }
+  for (let y=0;y<H;y++){
+    const y0=Math.max(0,y-R), y1=Math.min(H,y+R+1);
+    for (let x=0;x<W;x++){
+      const x0=Math.max(0,x-R), x1=Math.min(W,x+R+1);
+      const s=(ii[y1*W1+x1]-ii[y0*W1+x1]-ii[y1*W1+x0]+ii[y0*W1+x0])>>>0, bg=s/((x1-x0)*(y1-y0));
+      m[y*W+x] = minCh[y*W+x] < Math.min(bg,paperMin)*ink ? 1 : 0;
+    }
+  }
+  // ตัดเส้นตรงยาว (เส้นตาราง/ขอบฟอร์ม) ออก ไม่ให้วงกลมที่ติดเส้นถูกรวมเป็นก้อนเดียวกับเส้น — ส่วนโค้งของวงสั้นกว่านี้มาก
+  const LR=Math.round(0.03*Math.max(W,H)), vlines=[];   // vlines = เส้นตั้งยาว ใช้แยกกลุ่มวงกลมที่คั่นด้วยเส้นหนา (เช่น รหัสนักศึกษา | รหัสวิชา)
+  for (let y=0;y<H;y++){ const o=y*W; let s=-1; for (let x=0;x<=W;x++){ const on=x<W && m[o+x]===1; if (on){ if (s<0) s=x; } else if (s>=0){ if (x-s>LR) m.fill(0,o+s,o+x); s=-1; } } }
+  for (let x=0;x<W;x++){ let s=-1; for (let y=0;y<=H;y++){ const on=y<H && m[y*W+x]===1; if (on){ if (s<0) s=y; } else if (s>=0){ if (y-s>LR){ for (let k=s;k<y;k++) m[k*W+x]=0; vlines.push([x,s,y]); } s=-1; } } }
   const t = new Uint8Array(N), d = new Uint8Array(N);
   for (let y=1;y<H-1;y++){ const o=y*W; for (let x=1;x<W-1;x++){ const i=o+x; t[i] = m[i]|m[i-1]|m[i+1]; } }
   for (let y=1;y<H-1;y++){ const o=y*W; for (let x=1;x<W-1;x++){ const i=o+x; d[i] = t[i]|t[i-W]|t[i+W]; } }
@@ -290,12 +304,12 @@ function detect(prep, ink){
       if (w>=minS && h>=minS && w<=maxS && h<=maxS && w/h>0.7 && w/h<1.43 && area<0.9*(w+2)*(h+2)) cand.push({ x:(x0+x1)/2, y:(y0+y1)/2, s:(w+h)/2 });
     }
   }
-  if (cand.length<5) return { circles:[], D:0, thr, d };
+  if (cand.length<5) return { circles:[], D:0, thr, d, vlines };
   // ขนาดวงกลมที่พบบ่อยที่สุด = ขนาดวงกลมของฟอร์ม
   let best=0, bestS=0;
   for (const c of cand){ let n=0; for (const o of cand) if (o.s>=c.s*.88 && o.s<=c.s*1.12) n++; if (n>best){best=n;bestS=c.s;} }
   const D = median(cand.filter(c=>c.s>=bestS*.88&&c.s<=bestS*1.12).map(c=>c.s));
-  return { circles:cand.filter(c=>c.s>=D*.8&&c.s<=D*1.3), D, thr, d };
+  return { circles:cand.filter(c=>c.s>=D*.8&&c.s<=D*1.3), D, thr, d, vlines };
 }
 
 // มุมเอียงของกระดาษ จากแนวของวงกลมที่อยู่ติดกัน
@@ -318,14 +332,75 @@ function rotateCanvas(src, ang){
   const x=c.getContext('2d', {willReadFrequently:true}); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
   x.translate(c.width/2,c.height/2); x.rotate(-ang); x.drawImage(src,-c.width/2,-c.height/2); return c;
 }
+/* ---------- หมุนภาพตั้งตรงอัตโนมัติ จากแถบสี่เหลี่ยมดำ (timing marks) ----------
+   ฟอร์มมาตรฐาน: แถบดำเรียงเป็นแนวยาวอยู่ขอบล่าง — หาแถบนั้นว่าอยู่ขอบไหน แล้วหมุนทีละ 90° ให้ไปอยู่ล่าง */
+function collectBars(prep){
+  const { W, H, maxCh, paperMax } = prep, N=W*H, M=Math.max(W,H), thr=paperMax*0.4;
+  const m=new Uint8Array(N);
+  for (let i=0;i<N;i++) m[i] = maxCh[i]<thr ? 1 : 0;   // ดำสนิทเท่านั้น (หมึกแดง/ชมพูของฟอร์มไม่นับ)
+  const stack=new Int32Array(N), bars=[];
+  for (let y=0;y<H;y++){
+    for (let x=0;x<W;x++){
+      const i0=y*W+x; if (m[i0]!==1) continue;
+      let sp=0, x0=x,x1=x,y0=y,y1=y, area=0; stack[sp++]=i0; m[i0]=2;
+      while (sp){
+        const p=stack[--sp], py=(p/W)|0, px=p-py*W; area++;
+        if (px<x0) x0=px; else if (px>x1) x1=px; if (py<y0) y0=py; else if (py>y1) y1=py;
+        if (px>0 && m[p-1]===1){m[p-1]=2;stack[sp++]=p-1;} if (px<W-1 && m[p+1]===1){m[p+1]=2;stack[sp++]=p+1;}
+        if (py>0 && m[p-W]===1){m[p-W]=2;stack[sp++]=p-W;} if (py<H-1 && m[p+W]===1){m[p+W]=2;stack[sp++]=p+W;}
+      }
+      const w=x1-x0+1, h=y1-y0+1, lo=Math.min(w,h), hi=Math.max(w,h);
+      if (lo>=Math.max(3,0.002*M) && hi>=0.008*M && hi<=0.06*M && hi>=1.8*lo && hi<=14*lo && area>=0.7*w*h)
+        bars.push({ x:(x0+x1)/2, y:(y0+y1)/2, hor:w>h, len:hi });
+    }
+  }
+  return bars;
+}
+// แถบที่เรียงกันเป็นแนวเดียวกันมากที่สุด (≥ 6 แท่ง) → { n, hor, pos, members }
+function pickStrip(bars){
+  let best=null;
+  for (const hor of [true,false]){
+    // แถบที่ยาวตามแนวนอน เรียงกันเป็นแนวตั้ง (ขอบซ้าย/ขวา) — และกลับกัน
+    const g=bars.filter(b=>b.hor===hor).map(b=>({ c:hor?b.x:b.y, len:b.len, b })).sort((a,b)=>a.c-b.c);
+    for (let i=0, j=0;i<g.length;i++){
+      const tol=1.2*g[i].len; while (g[j].c<g[i].c-tol) j++;
+      const n=i-j+1; if (n>=6 && (!best||n>best.n)){ let s=0; for (let k=j;k<=i;k++) s+=g[k].c; best={ n, hor, pos:s/n, members:g.slice(j,i+1).map(e=>e.b) }; }
+    }
+  }
+  return best;
+}
+function findStrip(prep){
+  const { W, H } = prep, best=pickStrip(collectBars(prep));
+  if (!best) return { k:0, found:false };
+  const far = best.pos > (best.hor?W:H)/2;
+  // k = จำนวนครั้งที่ต้องหมุนตามเข็ม 90° เพื่อให้แถบไปอยู่ขอบล่าง
+  const k = best.hor ? (far?1:3) : (far?0:2);
+  return { k, found:true, n:best.n };
+}
+// ภาพตั้งตรงแล้ว: ตำแหน่ง x ของแถบดำตามขอบล่าง (เรียงจากซ้ายไปขวา) — ใช้วัดการยืด/หดของภาพตามแนวป้อนกระดาษ
+function bottomBars(prep){
+  const best=pickStrip(collectBars(prep));
+  if (!best || best.hor || best.pos<prep.H/2) return null;
+  return { xs:best.members.map(b=>b.x).sort((a,b)=>a-b), y:median(best.members.map(b=>b.y)) };
+}
+function rotateQuarter(src, k){
+  k=((k%4)+4)%4; if (!k) return src;
+  const w=src.width, h=src.height, c=document.createElement('canvas');
+  c.width = k===2 ? w : h; c.height = k===2 ? h : w;
+  const x=c.getContext('2d', {willReadFrequently:true});
+  if (k===1){ x.translate(h,0); x.rotate(Math.PI/2); } else if (k===2){ x.translate(w,h); x.rotate(Math.PI); } else { x.translate(0,w); x.rotate(-Math.PI/2); }
+  x.drawImage(src,0,0); return c;
+}
 function analyze(canvas, keepMask){
-  let prep=prepare(canvas), det=detect(prep,P.ink), angle=0;
+  let prep=prepare(canvas), quarter=0, strip=findStrip(prep);
+  if (strip.k){ quarter=strip.k*90; canvas=rotateQuarter(canvas,strip.k); prep=prepare(canvas); }
+  let det=detect(prep,P.ink), angle=0;
   if (det.circles.length>20){
     const a=estimateAngle(det.circles,det.D);
     if (Math.abs(a)>0.12*Math.PI/180){ angle=a; canvas=rotateCanvas(canvas,a); prep=prepare(canvas); det=detect(prep,P.ink); }
   }
   if (!keepMask) det.d=null;
-  return { canvas, prep, det, angle };
+  return { canvas, prep, det, angle, quarter, strip, bars:bottomBars(prep) };
 }
 
 /* ---------- จัดกลุ่มวงกลมเป็นบล็อก ---------- */
@@ -345,18 +420,33 @@ function clusterAxis(vals, D){
   }
   return cs;
 }
-function buildBlocks(circ, D){
+function buildBlocks(circ, D, vlines=[]){
   const n=circ.length; if (!n) return [];
   const nn=circ.map((a,i)=>{ let m=1e9; for (let j=0;j<n;j++){ if (j!==i){ const d=Math.hypot(a.x-circ[j].x,a.y-circ[j].y); if (d<m) m=d; } } return m; });
   const L=1.6*median(nn), par=circ.map((_,i)=>i);
   const find=i=>{ while(par[i]!==i){ par[i]=par[par[i]]; i=par[i]; } return i; };
   for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){
     const dx=Math.abs(circ[i].x-circ[j].x), dy=Math.abs(circ[i].y-circ[j].y);
-    if ((dy<.5*D && dx<L) || (dx<.5*D && dy<L)) par[find(i)]=find(j);
+    if ((dy<.5*D && dx<L) || (dx<.5*D && dy<L)){
+      if (dy<.5*D){   // มีเส้นตั้งยาวคั่นระหว่างสองวง = คนละกลุ่ม
+        const xa=Math.min(circ[i].x,circ[j].x)+.25*D, xb=Math.max(circ[i].x,circ[j].x)-.25*D, y=circ[i].y;
+        if (vlines.some(v=>v[0]>=xa && v[0]<=xb && y>=v[1]-.5*D && y<=v[2]+.5*D)) continue;
+      }
+      par[find(i)]=find(j);
+    }
   }
   const groups=new Map(); circ.forEach((c,i)=>{ const r=find(i); if(!groups.has(r)) groups.set(r,[]); groups.get(r).push(c); });
   const blocks=[];
-  for (const g of groups.values()){
+  for (let g of groups.values()){
+    // ตัดคอลัมน์/แถวที่มีวงกลมน้อยผิดปกติ (เช่น กล่องเลขที่อยู่ติดขอบ หรือลายมือที่เป็นวง) ออกจากบล็อก
+    for (let pass=0; pass<2 && g.length>=8; pass++){
+      const cx=clusterAxis(g.map(c=>c.x),D), cy=clusterAxis(g.map(c=>c.y),D);
+      const nr=(arr,v)=>{ let bi=0; arr.forEach((a,i)=>{ if (Math.abs(a-v)<Math.abs(arr[bi]-v)) bi=i; }); return bi; };
+      const nc=cx.map(()=>0), nrw=cy.map(()=>0); for (const c of g){ nc[nr(cx,c.x)]++; nrw[nr(cy,c.y)]++; }
+      const keep=g.filter(c=>(cy.length<4||nc[nr(cx,c.x)]>=0.4*cy.length) && (cx.length<4||nrw[nr(cy,c.y)]>=0.4*cx.length));
+      if (keep.length===g.length) break; g=keep;
+    }
+    if (g.length<2) continue;
     const cols=clusterAxis(g.map(c=>c.x),D), rows=clusterAxis(g.map(c=>c.y),D);
     const near=(arr,v)=>{ let bi=0; arr.forEach((a,i)=>{ if (Math.abs(a-v)<Math.abs(arr[bi]-v)) bi=i; }); return bi; };
     const cells=rows.map(y=>cols.map(x=>({x,y,det:false})));
@@ -385,7 +475,7 @@ const rng = list => { const out=[]; let i=0; list=[...list].sort((a,b)=>a-b); wh
 
 /* ---------- วิเคราะห์เฉลย: แยกประเภทบล็อกจากรูปแบบการฝน ---------- */
 function analyzeKey(an){
-  const D=an.det.D, blocks=buildBlocks(an.det.circles,D), offs=makeOffsets(0.3*D), warns=[];
+  const D=an.det.D, blocks=buildBlocks(an.det.circles,D,an.det.vlines), offs=makeOffsets(0.3*D), warns=[];
   const all=[];
   for (const b of blocks) for (const row of b.cells) for (const c of row){ c.score=measure(an.prep,c.x,c.y,offs); all.push(c.score); }
   const baseline=median(all);
@@ -397,11 +487,14 @@ function analyzeKey(an){
     if (!total){ b.type='blank'; continue; }
     const rs=perRow.indexOf(Math.max(...perRow));
     if (C>=2 && perRow[rs]>=2 && perRow[rs]===total && perRow[rs]>=C*0.5){
-      b.type='info'; b.idRow=rs; b.missing=[]; raw[rs].forEach((v,c)=>{ if(!v) b.missing.push(c); });
+      b.type='info'; b.use=true; b.idRow=rs; b.missing=[]; raw[rs].forEach((v,c)=>{ if(!v) b.missing.push(c); });
+    } else if (C>=2 && b.rows.length>=6 && perRow.some(v=>v>=2) && (()=>{      // ฝนเลขต่างแถวกัน แต่คอลัมน์ละไม่เกิน 1 ช่อง = ช่องรหัส (แต่ละคอลัมน์คือหนึ่งหลัก)
+      const pc=b.cols.map((_,c)=>raw.filter(r=>r[c]).length); return pc.every(v=>v<=1) && pc.filter(v=>v===1).length>=C*0.5; })()){
+      b.type='info'; b.use=true; b.idRow=null; b.missing=[]; b.cols.forEach((_,c)=>{ if (!raw.some(r=>r[c])) b.missing.push(c); });
     } else b.type='answer';
   }
   for (const b of blocks) if (b.type==='blank')   // บล็อกว่างที่ขนาดเท่าบล็อกคำตอบ = ข้อที่เกินเฉลย
-    b.type = blocks.some(o=>o.type==='answer'&&o.rows.length===b.rows.length&&o.cols.length===b.cols.length) ? 'answer' : 'raw';
+    b.type = blocks.some(o=>o.type==='answer'&&o.rows.length===b.rows.length&&o.cols.length===b.cols.length) ? 'answer' : b.rows.length>=10 ? 'info' : 'raw';   // บล็อก 10 แถวที่ไม่ฝน = ช่องรหัส (เลข 0–9)
 
   const answers=blocks.filter(b=>b.type==='answer').sort((a,b)=>a.cx-b.cx||a.cy-b.cy);
   const graded=[], ungraded=[]; let q=1;
@@ -414,14 +507,19 @@ function analyzeKey(an){
     });
     q+=b.rows.length;
   }
-  const byPos=(a,b)=>a.rows[0]-b.rows[0]||a.cols[0]-b.cols[0];
-  const infos=blocks.filter(b=>b.type==='info').sort(byPos), raws=blocks.filter(b=>b.type==='raw').sort(byPos);
-  infos.forEach((b,i)=>{ b.name=`ข้อมูล${i+1} (${b.cols.length} หลัก)`; if (b.missing.length) warns.push(`${b.name}: เฉลยไม่ได้ฝนคอลัมน์ที่ ${b.missing.map(c=>c+1).join(', ')} — ตรวจให้แน่ใจว่าอ่านครบ`); });
-  raws.forEach((b,i)=>{ b.name=`ช่องเลือก${i+1} (${b.rows.length}×${b.cols.length})`; });
+  const byPos=(a,b)=>a.cols[0]-b.cols[0]||a.rows[0]-b.rows[0];   // เรียงจากซ้ายไปขวา
+  for (const b of blocks) if (b.type==='info' && b.missing===undefined){ b.missing=[]; b.idRow=null; }
+  const others=blocks.filter(b=>b.type==='info'||b.type==='raw').sort(byPos);
+  const infos=others.filter(b=>b.type==='info'), raws=others.filter(b=>b.type==='raw');
+  others.forEach((b,i)=>{
+    if (b.use===undefined) b.use=true;
+    b.name = b.type==='info' ? `ข้อมูล${i+1} (${b.cols.length} หลัก)` : `ช่องเลือก${i+1} (${b.rows.length}×${b.cols.length})`;
+    if (b.type==='info' && b.missing.length) warns.push(`${b.name}: เฉลยไม่ได้ฝนคอลัมน์ที่ ${b.missing.map(c=>c+1).join(', ')} — ตรวจให้แน่ใจว่าอ่านครบ`);
+  });
   if (ungraded.length && graded.length) warns.push(`ข้อที่เฉลยไม่ฝน (ไม่นำมาคิดคะแนน): ${rng(ungraded)}`);
   if (!graded.length) warns.push('ไม่พบเฉลยที่ฝนเลย — ลองปรับ "ความไวต่อขอบวงกลม" หรือ "เกณฑ์ความเข้มของการฝน"');
   if (blocks.some(b=>b.cells.flat().some(c=>!c.det))) warns.push('บางช่องหาวงกลมไม่เจอ (ใช้ตำแหน่งตามกริดแทน) — ดูภาพ debug');
-  return { blocks, answers, infos, raws, graded, ungraded, nq:q-1, D, circles:an.det.circles, baseline, warns };
+  return { blocks, answers, others, infos, raws, graded, ungraded, nq:q-1, D, circles:an.det.circles, baseline, warns };
 }
 
 /* ---------- จัดภาพกระดาษคำตอบให้ทับเฉลย ---------- */
@@ -443,40 +541,150 @@ function fitAffine(pairs){
   const M=[[Sxx,Sxy,Sx],[Sxy,Syy,Sy],[Sx,Sy,n]], pu=solve3(M,[Sxu,Syu,Su]), pv=solve3(M,[Sxv,Syv,Sv]);
   return pu&&pv ? { a:pu[0], b:pu[1], tx:pu[2], c:pv[0], d:pv[1], ty:pv[2] } : null;
 }
-function alignPoints(kc, kD, sc, sD){
+// แผนที่ x จากเฉลยไปกระดาษนักศึกษา แบบเส้นตรงเป็นช่วงๆ ตามแถบดำทีละแท่ง
+// จับคู่แท่งด้วยการหาเส้นตรง x' = a·x + b ที่ทำให้แท่งตรงกันมากที่สุด (ไม่นับตามลำดับ → แท่งขาด/แท่งเกินไม่ทำให้ทั้งช่วงเลื่อนไป 1 คอลัมน์)
+function barMap(kb, sb){
+  if (!kb || !sb || kb.length<8 || sb.length<8) return null;
+  const n=kb.length, pitch=median(kb.slice(1).map((v,i)=>v-kb[i]));
+  const bin=0.25*pitch; let best=null;
+  for (let a=0.95; a<=1.05001; a+=0.002){
+    const hist=new Map();
+    for (const k of kb) for (const v of sb){ const key=Math.round((v-a*k)/bin); hist.set(key,(hist.get(key)||0)+1); }
+    for (const [key,c] of hist){ const t=c+(hist.get(key-1)||0)+(hist.get(key+1)||0); if (!best||t>best.t) best={ t, a, key }; }
+  }
+  if (!best) return null;
+  let a=best.a, b=best.key*bin, pairs=[];
+  for (const tol of [0.3,0.35,0.35]){
+    pairs=[]; const used=new Set();
+    for (const k of kb){ let bj=-1, bd=tol*pitch; sb.forEach((v,j)=>{ const d=Math.abs(v-(a*k+b)); if (d<=bd && !used.has(j)){ bd=d; bj=j; } }); if (bj>=0){ used.add(bj); pairs.push([k,sb[bj]]); } }
+    if (pairs.length<8) return null;
+    let Sx=0,Sy=0,Sxx=0,Sxy=0; for (const [x,y] of pairs){ Sx+=x; Sy+=y; Sxx+=x*x; Sxy+=x*y; }
+    const m=pairs.length, den=m*Sxx-Sx*Sx; if (Math.abs(den)<1e-9) return null;
+    a=(m*Sxy-Sx*Sy)/den; b=(Sy-a*Sx)/m;
+  }
+  if (pairs.length<0.7*n) return null;    // จับคู่ได้น้อยเกินไป = อ่านแถบไม่น่าเชื่อถือ → ใช้วิธีอื่น
+  const kx=pairs.map(p=>p[0]), sx=pairs.map(p=>p[1]), m=pairs.length;
+  return x=>{ let i=0; while (i<m-2 && x>=kx[i+1]) i++; return sx[i]+(x-kx[i])*(sx[i+1]-sx[i])/(kx[i+1]-kx[i]); };
+}
+// เส้นตั้งยาว (ขอบบล็อก/เส้นคั่นรหัส) เป็นจุดอ้างอิงที่ไม่ซ้ำกัน — ใช้ตัดสินว่าตารางวงกลมเลื่อนไป 1 คอลัมน์หรือไม่
+function mergeLines(vl, minLen){
+  const a=[...vl].sort((p,q)=>p[0]-q[0]), out=[];
+  for (const [x,y0,y1] of a){
+    const l=out[out.length-1];
+    if (l && x-l.x1<=2){ l.x1=x; l.xs+=x; l.n++; l.y0=Math.min(l.y0,y0); l.y1=Math.max(l.y1,y1); } else out.push({ x1:x, xs:x, n:1, y0, y1 });
+  }
+  return out.map(l=>({ x:l.xs/l.n, y0:l.y0, y1:l.y1, len:l.y1-l.y0 })).filter(l=>l.len>=minLen);
+}
+function alignPoints(kc, kD, sc, sD, kb, sb, kv, sv){
   if (sc.length<10) return null;
-  const ratio=sD/kD, s0=ratio>0.7&&ratio<1.4 ? ratio : 1, bs=sD*0.3, hist=new Map(), off=4000;
-  for (const k of kc) for (const s of sc){
-    const key=(Math.round((s.x-s0*k.x)/bs)+off)*10000+Math.round((s.y-s0*k.y)/bs)+off;
-    hist.set(key,(hist.get(key)||0)+1);
+  const ratio=sD/kD, s0=ratio>0.7&&ratio<1.4 ? ratio : 1, hash=makeHash(sc,sD);
+  const fwd=(A,x,y)=>[A.a*x+A.b*y+A.tx, A.c*x+A.d*y+A.ty];
+
+  // วิธีที่ 1: affine ทั้งแผ่น (เลื่อน หมุน เอียง สเกล) จากการโหวตตำแหน่ง + ICP
+  function byAffine(){
+    const bs=sD*0.3, hist=new Map(), off=4000;
+    for (const k of kc) for (const s of sc){
+      const key=(Math.round((s.x-s0*k.x)/bs)+off)*10000+Math.round((s.y-s0*k.y)/bs)+off;
+      hist.set(key,(hist.get(key)||0)+1);
+    }
+    let bestKey=0, bestV=-1;
+    for (const key of hist.keys()){
+      const ix=Math.floor(key/10000), iy=key%10000; let v=0;
+      for (let i=-1;i<=1;i++) for (let j=-1;j<=1;j++) v+=hist.get((ix+i)*10000+iy+j)||0;
+      if (v>bestV){ bestV=v; bestKey=key; }
+    }
+    let A={ a:s0,b:0,c:0,d:s0, tx:(Math.floor(bestKey/10000)-off)*bs, ty:(bestKey%10000-off)*bs };
+    for (const rf of [0.9,0.7,0.5,0.4,0.4]){
+      const pairs=[];
+      for (const k of kc){ const [px,py]=fwd(A,k.x,k.y), m=nearest(hash,px,py,rf*sD); if (m) pairs.push([k.x,k.y,m.x,m.y]); }
+      if (pairs.length<6) break;
+      const nA=fitAffine(pairs); if (!nA) break; A=nA;
+    }
+    return { gp:(x,y)=>fwd(A,x,y), scale:Math.sqrt(Math.abs(A.a*A.d-A.b*A.c))||1 };
   }
-  let bestKey=0, bestV=-1;
-  for (const key of hist.keys()){
-    const ix=Math.floor(key/10000), iy=key%10000; let v=0;
-    for (let i=-1;i<=1;i++) for (let j=-1;j<=1;j++) v+=hist.get((ix+i)*10000+iy+j)||0;
-    if (v>bestV){ bestV=v; bestKey=key; }
+
+  // วิธีที่ 2: แถบดำขอบล่างบอกตำแหน่ง x ของแต่ละช่วงโดยตรง (กันภาพยืด/หดไม่สม่ำเสมอ) แล้วหา y + การเอียงจากวงกลม
+  function byBars(){
+    const X=barMap(kb && kb.xs, sb && sb.xs); if (!X) return null;
+    // ตำแหน่งแถบดำเทียบกับขอบกระดาษไม่ซ้ำกัน → ใช้เป็นหลักยึดแนวตั้ง (การโหวตจากตารางวงกลมอาจเลื่อนไป 1 แถว)
+    const yb=kb.y, ty0=sb.y-s0*kb.y;
+    // y' = d*y + c*x + ty   และ   x' = X(x) + b*(y-yb) + tx
+    let P={ d:s0, c:0, ty:ty0, b:0, tx:0 };
+    const g=(P,x,y)=>[X(x)+P.b*(y-yb)+P.tx, P.d*y+P.c*x+P.ty];
+    for (const rf of [0.6,0.5,0.45,0.4]){
+      const py=[], px=[];
+      for (const k of kc){ const [gx,gy]=g(P,k.x,k.y), m=nearest(hash,gx,gy,rf*sD); if (m){ py.push([k.x,k.y,m.y]); px.push([k.y-yb,m.x-X(k.x)]); } }
+      if (py.length<6) break;
+      // กำลังสองน้อยสุดแบบตัดค่าผิดปกติ (วงกลมลายมือ/จับคู่ผิด) ทิ้งทีละรอบ
+      let use=py, sol=null;
+      for (let it=0; it<3; it++){
+        let Sxx=0,Sxy=0,Sx=0,Syy=0,Sy=0,Sxv=0,Syv=0,Sv=0; const n=use.length; if (n<6) break;
+        for (const [x,y,v] of use){ Sxx+=x*x;Sxy+=x*y;Sx+=x;Syy+=y*y;Sy+=y;Sxv+=x*v;Syv+=y*v;Sv+=v; }
+        const sl=solve3([[Sxx,Sxy,Sx],[Sxy,Syy,Sy],[Sx,Sy,n]],[Sxv,Syv,Sv]); if (!sl) break; sol=sl;
+        const res=py.map(([x,y,v])=>Math.abs(v-(sl[0]*x+sl[1]*y+sl[2]))), lim=Math.max(2,2.5*median(res));
+        use=py.filter((_,i)=>res[i]<=lim);
+      }
+      if (!sol || Math.abs(sol[1]/s0-1)>0.04 || Math.abs(sol[0])>0.03) break;    // ค่าที่เป็นไปไม่ได้ = จับคู่ผิด ใช้ค่าเดิม
+      const mx=median(px.map(e=>e[1])), pxs=px.filter(e=>Math.abs(e[1]-mx)<0.35*sD);
+      let q=0,qq=0,qu=0,qv=0; for (const [u,v] of pxs){ q+=u; qq+=u*u; qu+=v; qv+=u*v; }
+      const m=pxs.length, den=m*qq-q*q, b=Math.abs(den)>1e-9 ? (m*qv-q*qu)/den : 0;
+      P={ c:sol[0], d:sol[1], ty:sol[2], b, tx:(qu-b*q)/m };
+    }
+    return { gp:(x,y)=>g(P,x,y), scale:Math.sqrt(Math.abs(P.d*(X(kb.xs[kb.xs.length-1])-X(kb.xs[0]))/(kb.xs[kb.xs.length-1]-kb.xs[0])))||1, viaBars:true };
   }
-  let A={ a:s0,b:0,c:0,d:s0, tx:(Math.floor(bestKey/10000)-off)*bs, ty:(bestKey%10000-off)*bs };
-  const hash=makeHash(sc,sD), fwd=(A,x,y)=>[A.a*x+A.b*y+A.tx, A.c*x+A.d*y+A.ty];
-  for (const rf of [0.9,0.7,0.5,0.4,0.4]){
-    const pairs=[];
-    for (const k of kc){ const [px,py]=fwd(A,k.x,k.y), m=nearest(hash,px,py,rf*sD); if (m) pairs.push([k.x,k.y,m.x,m.y]); }
-    if (pairs.length<6) break;
-    const nA=fitAffine(pairs); if (!nA) break; A=nA;
+
+  // สแกนจากเครื่องป้อนกระดาษมักยืด/หดไม่สม่ำเสมอ → ชดเชยเพิ่มเฉพาะที่
+  // = ค่ามัธยฐานของส่วนต่างตำแหน่งวงกลมที่จับคู่ได้ในบริเวณใกล้เคียง (รัศมี ~4.5 เท่าของวง)
+  function refine(base){
+    const gp=base.gp; let field=[];
+    const corr=(x,y)=>{
+      const rx=[], ry=[], R2=(4.5*sD)**2;
+      for (const f of field){ const dx=f.x-x, dy=f.y-y; if (dx*dx+dy*dy<=R2){ rx.push(f.rx); ry.push(f.ry); } }
+      return rx.length>=3 ? [median(rx),median(ry)] : [0,0];
+    };
+    const loc=(x,y)=>{ const [gx,gy]=gp(x,y), [cx,cy]=corr(x,y); return [gx+cx,gy+cy]; };
+    for (const rf of base.viaBars?[0.5,0.45]:[0.9,0.6,0.45]){
+      const nf=[];
+      for (const k of kc){ const [px,py]=loc(k.x,k.y), m=nearest(hash,px,py,rf*sD); if (m){ const [gx,gy]=gp(k.x,k.y); nf.push({ x:k.x, y:k.y, rx:m.x-gx, ry:m.y-gy }); } }
+      if (nf.length<6) break; field=nf;
+    }
+    let matched=0;
+    for (const k of kc){ const [px,py]=loc(k.x,k.y); if (nearest(hash,px,py,0.4*sD)) matched++; }
+    return { matched, total:kc.length, hash, fwd:loc, scale:base.scale, viaBars:!!base.viaBars };
   }
-  let matched=0;
-  for (const k of kc){ const [px,py]=fwd(A,k.x,k.y); if (nearest(hash,px,py,0.4*sD)) matched++; }
-  return { A, matched, total:kc.length, hash, fwd:(x,y)=>fwd(A,x,y) };
+
+  const kL=mergeLines(kv||[],4*kD), sL=mergeLines(sv||[],4*sD);
+  const pitchK=median(kc.map(c=>{ let m=1e9; for (const o of kc){ const dx=Math.abs(o.x-c.x); if (o!==c && Math.abs(o.y-c.y)<0.5*kD && dx>0.5*kD && dx<m) m=dx; } return m; }).filter(v=>v<1e8));
+  // ถ้าตารางเลื่อนไป 1 คอลัมน์ วงกลมยังจับคู่ได้เกือบหมด → ลองเลื่อน ±1 คอลัมน์ แล้วเลือกตำแหน่งที่เส้นตั้งตรงกันมากที่สุด
+  function fixShift(base){
+    if (!kL.length || !sL.length || !(pitchK>0)) return base;
+    const pitch=pitchK*base.scale, tol=0.2*pitch; let bestDx=0, bestS=-1;
+    for (const dx of [0,-pitch,pitch]){
+      let sc2=0;
+      for (const l of kL){ const [px,py]=base.gp(l.x,(l.y0+l.y1)/2); if (sL.some(m=>Math.abs(m.x-(px+dx))<=tol && Math.abs((m.y0+m.y1)/2-py)<=0.5*(m.len+l.len))) sc2+=l.len; }
+      if (sc2>bestS){ bestS=sc2; bestDx=dx; }
+    }
+    return bestDx ? { ...base, gp:(x,y)=>{ const [gx,gy]=base.gp(x,y); return [gx+bestDx,gy]; } } : base;
+  }
+  let best=null;
+  // วงกลมเรียงเป็นตารางซ้ำๆ จึงเลื่อนไป 1 คอลัมน์แล้วยังจับคู่ได้เกือบเท่าเดิม — จึงเชื่อแถบดำ (ไม่ซ้ำกัน) ก่อน
+  // ใช้ affine เมื่อแถบอ่านไม่ได้ หรือผลจากแถบแย่ชัดเจน
+  for (const f of [byBars,byAffine]){
+    let b=f(); if (!b) continue; b=fixShift(b); const r=refine(b);
+    if (!best || r.matched>best.matched+0.1*kc.length) best=r;
+    if (best.matched>=0.85*kc.length) break;
+  }
+  return best;
 }
 
 /* ---------- ตรวจกระดาษคำตอบ 1 หน้า ---------- */
 function gradeStudent(an, page){
-  const K=S.key, reasons=[], rec={ page, angle:an.angle, info:{}, raw:{}, given:{}, cells:[], score:0, reasons };
-  const al = an.det.circles.length>=10 ? alignPoints(K.circles,K.D,an.det.circles,an.det.D) : null;
+  const K=S.key, reasons=[], rec={ page, quarter:an.quarter, angle:an.angle, info:{}, raw:{}, given:{}, cells:[], score:0, reasons };
+  const al = an.det.circles.length>=10 ? alignPoints(K.circles,K.D,an.det.circles,an.det.D,S.keyAn.bars,an.bars,S.keyAn.det.vlines,an.det.vlines) : null;
   if (!al){ reasons.push('หาวงกลมในหน้านี้ไม่พบ / จัดภาพไม่ได้'); rec.status='check'; rec.fail=true; return rec; }
   rec.align=al.matched/al.total;
   if (rec.align<0.6) reasons.push(`จัดภาพไม่แน่ใจ (จับคู่วงกลมได้ ${Math.round(rec.align*100)}%)`);
-  const sc=Math.sqrt(Math.abs(al.A.a*al.A.d-al.A.b*al.A.c))||1, D=K.D*sc, offs=makeOffsets(0.3*D), scores=[];
+  const sc=al.scale, D=K.D*sc, offs=makeOffsets(0.3*D), scores=[];
   const grid=K.blocks.map(b=>b.cells.map(row=>row.map(c=>{
     const [px,py]=al.fwd(c.x,c.y), m=nearest(al.hash,px,py,0.4*D), x=m?m.x:px, y=m?m.y:py;
     const s=measure(an.prep,x,y,offs); scores.push(s); return { x, y, s };
@@ -487,6 +695,7 @@ function gradeStudent(an, page){
 
   // บล็อกข้อมูลผู้สอบ: ตำแหน่งแถวที่ฝนในแต่ละคอลัมน์ = ตัวเลข
   for (const b of K.infos){
+    if (!b.use) continue;
     const g=grid[bIdx.get(b)]; let val='';
     for (let c=0;c<b.cols.length;c++){
       const col=g.map(r=>r[c].delta), idx=pick(col,P.thr);
@@ -498,10 +707,13 @@ function gradeStudent(an, page){
   }
   // บล็อกที่เฉลยไม่ฝน: ส่งค่าดิบ
   for (const b of K.raws){
-    const g=grid[bIdx.get(b)], cellsMarked=[];
-    g.forEach((row,r)=>pick(row.map(c=>c.delta),P.thr).forEach(c=>{ cellsMarked.push([r+1,c+1]); row[c].m=true; row[c].state='mark'; }));
-    // ถ้าบล็อกมีคอลัมน์เดียว (เช่น เพศ) ให้บอกแค่ลำดับแถว
-    rec.raw[b.name] = b.cols.length===1 ? cellsMarked.map(x=>x[0]).join('+') : cellsMarked.map(x=>`${x[0]}:${x[1]}`).join(' ');
+    if (!b.use) continue;
+    const g=grid[bIdx.get(b)], base=b.rows.length>=10?0:1; let val='';
+    for (let c=0;c<b.cols.length;c++){      // ต่อคำตอบของแต่ละคอลัมน์เรียงกันเป็นข้อความเดียว (ไม่ฝน = -, หลายช่อง = (a,b))
+      const hit=[]; g.forEach((row,r)=>{ if (row[c].delta>=P.thr){ hit.push(r+base); row[c].m=true; row[c].state='mark'; } });
+      val+=hit.length===0?'-':hit.length===1?hit[0]:`(${hit.join(',')})`;
+    }
+    rec.raw[b.name]=val;
   }
   // บล็อกคำตอบ
   const miss=[], multi=[]; let score=0;
@@ -554,7 +766,7 @@ function drawKey(){
 }
 async function drawStudent(rec){
   const cv=$('#detCanvas'), ctx=cv.getContext('2d');
-  let c=await S.stuSrc.render(rec.page); if (rec.angle) c=rotateCanvas(c,rec.angle);
+  let c=rotateQuarter(await S.stuSrc.render(rec.page), rec.quarter/90); if (rec.angle) c=rotateCanvas(c,rec.angle);
   cv.width=c.width; cv.height=c.height; ctx.drawImage(c,0,0);
   if (!rec.cells.length) return;
   const R=rec.R*.95, lw=Math.max(2,R/5), K=S.key; let i=0;
@@ -645,12 +857,24 @@ function renderKey(){
   const K=S.key; $('#keyOut').hidden=false;
   const parts=[`พบวงกลม <b>${K.circles.length}</b> ช่อง ขนาดประมาณ ${K.D.toFixed(0)} px แบ่งเป็น <b>${K.blocks.length}</b> บล็อก`,
     `บล็อกคำตอบ ${K.answers.length} · บล็อกข้อมูลผู้สอบ ${K.infos.length} · ช่องดิบ ${K.raws.length}`,
-    `<b>คะแนนเต็ม = ${K.graded.length} ข้อ</b> (อ่านได้จากเฉลย จากทั้งหมด ${K.nq} ข้อในฟอร์ม)`];
+    `<b>คะแนนเต็ม = ${K.graded.length} ข้อ</b> (อ่านได้จากเฉลย จากทั้งหมด ${K.nq} ข้อในฟอร์ม)`,
+    S.keyAn.strip.found ? `หมุนภาพอัตโนมัติ ${S.keyAn.quarter}° ตามแถบสี่เหลี่ยมดำ` : ''].filter(Boolean);
   $('#keyMsg').innerHTML=`<div class="alert ${K.graded.length?'ok':'bad'}">${parts.join('<br>')}</div>`+K.warns.map(w=>`<div class="alert warn">⚠ ${esc(w)}</div>`).join('');
   const typeName={answer:'คำตอบ',info:'ข้อมูลผู้สอบ',raw:'ช่องดิบ (เฉลยไม่ฝน)'};
-  const all=[...K.answers,...K.infos,...K.raws];
-  $('#blkBody').innerHTML=all.map((b,i)=>`<tr><td>${i+1}</td><td>${typeName[b.type]}</td><td>${b.rows.length} แถว × ${b.cols.length} คอลัมน์${b.type==='answer'?`<br><span class="mut">ข้อ ${b.qStart}–${b.qStart+b.rows.length-1}</span>`:''}</td><td>${b.type==='answer'?'<span class="mut">—</span>':`<input type="text" data-i="${i}" value="${esc(b.name)}" size="22">`}</td></tr>`).join('');
+  const all=[...K.answers,...K.others];
+  const typeOpt=b=>`<select data-t="${all.indexOf(b)}"><option value="raw"${b.type==='raw'?' selected':''}>ช่องดิบ (บอกตำแหน่งที่ฝน)</option><option value="info"${b.type==='info'?' selected':''}>อ่านเป็นรหัส (เลข 0–9 ต่อคอลัมน์)</option></select>`;
+  $('#blkBody').innerHTML=all.map((b,i)=>`<tr><td>${i+1}</td><td>${b.type==='answer'?typeName.answer:typeOpt(b)}</td><td>${b.rows.length} แถว × ${b.cols.length} คอลัมน์${b.type==='answer'?`<br><span class="mut">ข้อ ${b.qStart}–${b.qStart+b.rows.length-1}</span>`:''}</td><td>${b.type==='answer'?'<span class="mut">คะแนน</span>':`<input type="checkbox" data-u="${i}"${b.use?' checked':''}>`}</td><td>${b.type==='answer'?'<span class="mut">—</span>':`<input type="text" data-i="${i}" value="${esc(b.name)}" size="22">`}</td></tr>`).join('');
   $('#blkBody').oninput=e=>{ const i=e.target.dataset.i; if (i!==undefined){ all[i].name=e.target.value; drawKey(); renderResults(); } };
+  $('#blkBody').onchange=e=>{
+    const u=e.target.dataset.u, t=e.target.dataset.t;
+    if (u!==undefined){ all[u].use=e.target.checked; renderResults(); }
+    else if (t!==undefined){   // เปลี่ยนวิธีอ่านบล็อก → ต้องตรวจกระดาษใหม่
+      const b=all[t]; b.type=e.target.value; b.missing=[]; b.idRow=null; b.use=true;
+      const byPos=(x,y)=>x.cols[0]-y.cols[0]||x.rows[0]-y.rows[0];
+      K.infos=K.blocks.filter(x=>x.type==='info').sort(byPos); K.raws=K.blocks.filter(x=>x.type==='raw').sort(byPos);
+      S.results=[]; $('#stuOut').hidden=true; renderKey();
+    }
+  };
   const byQ=new Map(K.graded.map(g=>[g.q,g.col]));
   $('#ansCount').textContent=`(${K.graded.length} ข้อ)`;
   $('#ansGrid').innerHTML=Array.from({length:K.nq},(_,i)=>i+1).map(q=>byQ.has(q)?`<div><span>${q}</span><b>${esc(optLabel(byQ.get(q)))}</b></div>`:`<div class="none"><span>${q}</span><b>–</b></div>`).join('');
@@ -693,17 +917,17 @@ for (const id of ['#pDpi']) $(id).addEventListener('change',()=>{ if (S.keyFile)
 
 /* ---------- UI: ขั้นที่ 2 ---------- */
 function columns(){
-  const K=S.key; return { info:K.infos.map(b=>b.name), raw:K.raws.map(b=>b.name), qs:K.graded.map(g=>g.q) };
+  const K=S.key; return { other:K.others.filter(b=>b.use).map(b=>b.name), qs:K.graded.map(g=>g.q) };
 }
 function renderResults(){
   if (!S.key || !S.results.length && $('#stuOut').hidden) return;
   const K=S.key, cols=columns(), only=$('#onlyFlag').checked;
-  const head=['หน้า',...cols.info,...cols.raw,'คะแนน','สถานะ'];
-  $('#colPreview').innerHTML=['ลำดับหน้า PDF',...cols.info,...cols.raw,'คะแนนรวม','คะแนนเต็ม ('+K.graded.length+')','สถานะ',`ข้อ ${cols.qs[0]??''} … ข้อ ${cols.qs[cols.qs.length-1]??''} (${cols.qs.length} คอลัมน์)`].map(x=>`<span class="chip">${esc(x)}</span>`).join('');
+  const head=['หน้า',...cols.other,'คะแนน','สถานะ'];
+  $('#colPreview').innerHTML=['ลำดับหน้า PDF',...cols.other,'คะแนนรวม','คะแนนเต็ม ('+K.graded.length+')','สถานะ',`ข้อ ${cols.qs[0]??''} … ข้อ ${cols.qs[cols.qs.length-1]??''} (${cols.qs.length} คอลัมน์)`].map(x=>`<span class="chip">${esc(x)}</span>`).join('');
   $('#resHead').innerHTML='<tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
   $('#resBody').innerHTML=S.results.map((r,i)=>({r,i})).filter(({r})=>!only||r.status!=='ok').map(({r,i})=>{
     const badge=r.status==='ok'?'<span class="badge ok">ปกติ</span>':`<span class="badge ${r.fail?'bad':'warn'}">ต้องตรวจซ้ำ</span> <span class="mut">${esc(r.reasons.join(' · '))}</span>`;
-    return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${cols.info.map(n=>`<td>${esc(r.info?.[n]??'')}</td>`).join('')}${cols.raw.map(n=>`<td>${esc(r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
+    return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${cols.other.map(n=>`<td>${esc(r.info?.[n]??r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
   }).join('');
   const flagged=S.results.filter(r=>r.status!=='ok').length, okR=S.results.filter(r=>!r.fail);
   $('#sumLine').textContent=`ตรวจแล้ว ${S.results.length} หน้า · ต้องตรวจซ้ำ ${flagged} ใบ`+(okR.length?` · คะแนนเฉลี่ย ${(okR.reduce((a,r)=>a+r.score,0)/okR.length).toFixed(1)}/${K.graded.length}`:'');
@@ -743,14 +967,14 @@ $('#stuFile').onchange=async e=>{
 $('#dlCsv').onclick=()=>{
   const K=S.key, cols=columns(), asText=$('#csvText').checked, mode=$('#csvMode').value;
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`, txt=v=>asText&&v!==''?`="${v}"`:q(v);
-  const lines=[[ 'ลำดับหน้า',...cols.info,...cols.raw,'คะแนนรวม','คะแนนเต็ม','สถานะ',...cols.qs.map(n=>'ข้อ '+n) ].map(q).join(',')];
+  const lines=[[ 'ลำดับหน้า',...cols.other,'คะแนนรวม','คะแนนเต็ม','สถานะ',...cols.qs.map(n=>'ข้อ '+n) ].map(q).join(',')];
   for (const r of S.results){
     const ans=cols.qs.map(n=>{
       const g=r.given?.[n]; if (g===undefined) return '';
       if (mode==='ok') return +(g===K.graded.find(x=>x.q===n).col);
       return g===-1?'-':g===-2?'*':optLabel(g);
     });
-    lines.push([ q(r.page), ...cols.info.map(n=>txt(r.info?.[n]??'')), ...cols.raw.map(n=>q(r.raw?.[n]??'')), q(r.fail?'':r.score), q(K.graded.length),
+    lines.push([ q(r.page), ...cols.other.map(n=>txt(r.info?.[n]??r.raw?.[n]??'')), q(r.fail?'':r.score), q(K.graded.length),
       q(r.status==='ok'?'ปกติ':'ต้องตรวจซ้ำ: '+r.reasons.join(' | ')), ...ans.map(q) ].join(','));
   }
   const url=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
