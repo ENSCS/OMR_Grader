@@ -687,8 +687,19 @@ function gradeStudent(an, page){
   rec.align=al.matched/al.total;
   if (rec.align<0.6) reasons.push(`จัดภาพไม่แน่ใจ (จับคู่วงกลมได้ ${Math.round(rec.align*100)}%)`);
   const sc=al.scale, D=K.D*sc, offs=makeOffsets(0.3*D), scores=[];
-  const grid=K.blocks.map(b=>b.cells.map(row=>row.map(c=>{
-    const [px,py]=al.fwd(c.x,c.y), m=nearest(al.hash,px,py,0.4*D), x=m?m.x:px, y=m?m.y:py;
+  // กรอบบล็อก: จัดกลุ่มวงกลมของใบนี้เป็นบล็อกแบบเดียวกับเฉลย แล้วจับคู่ "บล็อกต่อบล็อก" (ขนาดแถว×คอลัมน์เท่ากัน + ใกล้ตำแหน่งที่คาดไว้)
+  // ช่องที่ i,j ของเฉลย = ช่อง i,j ของบล็อกนั้นเสมอ จึงไม่เลื่อนไป 1 แถว/คอลัมน์ ถ้าหาบล็อกที่ขนาดตรงกันไม่ได้ ใช้ตำแหน่งที่แปลงมาแทน
+  const sBlocks=buildBlocks(an.det.circles,an.det.D,an.det.vlines), used=new Set(), frame=new Map(), pitch=K.D*1.3*sc;
+  K.blocks.forEach((b,i)=>{
+    const [px,py]=al.fwd(b.cx,b.cy); let best=-1, bd=3*pitch;
+    sBlocks.forEach((t,j)=>{ if (used.has(j)||t.rows.length!==b.rows.length||t.cols.length!==b.cols.length) return; const d=Math.hypot(t.cx-px,t.cy-py); if (d<bd){ bd=d; best=j; } });
+    if (best>=0){ used.add(best); frame.set(i,sBlocks[best]); }
+  });
+  rec.frames=frame.size+'/'+K.blocks.length;
+  const grid=K.blocks.map((b,bi)=>b.cells.map((row,r)=>row.map((c,cc)=>{
+    const fb=frame.get(bi); let x,y;
+    if (fb){ x=fb.cells[r][cc].x; y=fb.cells[r][cc].y; }
+    else { const [px,py]=al.fwd(c.x,c.y), m=nearest(al.hash,px,py,0.4*D); x=m?m.x:px; y=m?m.y:py; }
     const s=measure(an.prep,x,y,offs); scores.push(s); return { x, y, s };
   })));
   const base=median(scores);
