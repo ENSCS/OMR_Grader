@@ -709,14 +709,16 @@ function gradeStudent(an, page){
   // บล็อกข้อมูลผู้สอบ: ตำแหน่งแถวที่ฝนในแต่ละคอลัมน์ = ตัวเลข
   for (const b of K.infos){
     if (!b.use) continue;
-    const g=grid[bIdx.get(b)]; let val='';
+    const g=grid[bIdx.get(b)], missC=[], multiC=[]; let val='';
     for (let c=0;c<b.cols.length;c++){
       const col=g.map(r=>r[c].delta), idx=pick(col,P.thr);
       if (idx.length===1){ val+=idx[0]; g[idx[0]][c].m=true; g[idx[0]][c].state='mark'; }
-      else if (idx.length===0){ val+='?'; reasons.push(`${b.name}: หลักที่ ${c+1} ไม่ฝน`); }
-      else { val+='*'; idx.forEach(i=>{ g[i][c].m=true; g[i][c].state='mark'; }); reasons.push(`${b.name}: หลักที่ ${c+1} ฝนหลายช่อง`); }
+      else if (idx.length===0){ val+='?'; missC.push(c+1); }
+      else { val+='*'; idx.forEach(i=>{ g[i][c].m=true; g[i][c].state='mark'; }); multiC.push(c+1); }
     }
     rec.info[b.name]=val;
+    if (missC.length) reasons.push(`${b.name}: หลักที่ ${rng(missC)} ไม่ฝน`);
+    if (multiC.length) reasons.push(`${b.name}: หลักที่ ${rng(multiC)} ฝนหลายช่อง`);
   }
   // บล็อกที่เฉลยไม่ฝน: ส่งค่าดิบ
   for (const b of K.raws){
@@ -968,7 +970,7 @@ $('#onlyFlag').onchange=renderResults;
 async function openDetail(i){
   if (i<0||i>=S.results.length) return; S.sel=i; const r=S.results[i];
   $('#detail').hidden=false; $('#detTitle').textContent=`หน้า ${r.page}`+(r.fail?'':` — ${r.score}/${S.key.graded.length}`);
-  $('#detReasons').innerHTML=r.reasons.map(x=>`<div class="alert warn">⚠ ${esc(x)}</div>`).join('')||'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
+  $('#detReasons').innerHTML=r.reasons.length?`<div class="alert warn">⚠ ${esc(r.reasons.join(' · '))}</div>`:'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
   document.querySelectorAll('#resBody tr').forEach(t=>t.classList.toggle('sel',+t.dataset.i===i));
   await drawStudent(r); $('#detail').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
