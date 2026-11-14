@@ -90,26 +90,29 @@ tr.sel{background:var(--ok-bg)}
     <li>สแกนเป็น PDF สีหรือ grayscale ตั้งแต่ 200 dpi ขึ้นไป (ไม่ใช้ขาวดำล้วน) 1 หน้า = 1 คน ใช้ฟอร์มชุดเดียวกันทั้งไฟล์</li>
     <li>ไฟล์ไม่ถูกอัปโหลดไปไหน ประมวลผลในเครื่องของคุณทั้งหมด</li>
   </ol>
-  <h3>ขั้นที่ 1 ตรวจเฉลย</h3>
+  <h3>ขั้นที่ 1 ตั้งเฉลย (เลือกวิธีใดวิธีหนึ่ง)</h3>
   <ol>
-    <li>กด <b>เลือกไฟล์เฉลย</b> เลือก PDF/ภาพที่ฝนเฉลยแล้ว (ใช้หน้าแรก) โปรแกรมจะหมุนภาพและหาบล็อกให้เอง</li>
-    <li>หรือใช้ <b>CSV เฉลย</b> แทนการฝน: กด "ดาวน์โหลดไฟล์ CSV ตัวอย่าง" กรอกเฉลยแล้วเลือกไฟล์กลับเข้ามา (ใช้กับกระดาษเปล่าที่ไม่ฝนได้)</li>
-    <li>ดูภาพที่วงทับ: เขียว = อ่านว่าฝน, เทา = ช่องที่ไม่ฝน, แดง = ช่องที่หาไม่เจอ ตรวจว่าครบตามกระดาษจริง</li>
-    <li>เฉลยฝนผิด แก้ได้ในตาราง "เฉลยที่อ่านได้" ไม่ต้องสแกนใหม่</li>
-    <li>บล็อกที่ไม่ต้องการ (เช่น ช่องลายมือที่ถูกนับเป็นช่อง หรือบล็อกที่ถูกสแกนตัดขอบ) <b>คลิกกรอบในภาพ</b> หรือติ๊กออกในตาราง จะเป็นสีเทาและไม่ถูกนำไปใช้</li>
+    <li><b>ฟอร์ม SCI:</b> กด <b>ใช้ฟอร์ม SCI มาตรฐาน (กระดาษเปล่า)</b> แล้วอัปโหลด CSV เฉลยต่อ ไม่ต้องสแกนเฉลย</li>
+    <li><b>ฟอร์มอื่น แบบฝนเฉลย:</b> กด <b>เลือกไฟล์เฉลย</b> เลือก PDF/ภาพที่ฝนเฉลยแล้ว (ใช้หน้าแรก)</li>
+    <li><b>ฟอร์มอื่น แบบ CSV:</b> เลือกไฟล์กระดาษเปล่า แล้วกด <b>เลือกไฟล์ CSV เฉลย</b> ถ้ายังไม่มีกด "ดาวน์โหลดไฟล์ CSV ตัวอย่าง" กรอกข้อ/เฉลย (1–5 / ก–จ / A–E ว่าง = ไม่นับ) แล้วเลือกกลับเข้ามา</li>
+    <li>ดูภาพ: เขียว = เฉลยที่ใช้ (จาก CSV หรือที่ฝน), เทา = ช่องที่ไม่ฝน, แดง = ช่องที่หาไม่เจอ ตรวจว่าครบตามกระดาษจริง</li>
+    <li>เฉลยผิด แก้ได้ในตาราง "เฉลยที่อ่านได้" ไม่ต้องสแกนใหม่</li>
+    <li>บล็อกที่ไม่ต้องการ (เช่น ช่องลายมือที่ถูกนับเป็นช่อง บล็อกที่สแกนตัดขอบ หรือข้อที่ไม่ใช้) <b>คลิกกรอบในภาพ</b> หรือติ๊กออกในตาราง จะเป็นสีเทา ไม่ออก CSV และไม่คิดคะแนน (เปลี่ยนแล้วต้องตรวจกระดาษใหม่)</li>
     <li>ตั้งชื่อบล็อกข้อมูลได้ (เช่น รหัสนักศึกษา) ชื่อนี้จะเป็นหัวคอลัมน์ใน CSV</li>
     <li>ถูกต้องแล้วกด <b>ยืนยันเฉลย</b></li>
   </ol>
   <h3>ขั้นที่ 2 ตรวจกระดาษคำตอบ</h3>
   <ol>
     <li>เลือก PDF กระดาษคำตอบของนักศึกษา รอตรวจ (ประมาณ 0.3 วินาทีต่อใบ)</li>
-    <li>ดูตารางผล ใบที่ขึ้น "ต้องตรวจซ้ำ" จะบอกเหตุผลข้างๆ (ไม่ฝน / ฝนซ้อน / รหัสไม่ครบ) คลิกแถวเพื่อดูภาพกระดาษ</li>
+    <li>ดูตารางผล ใบที่ขึ้น "ต้องตรวจซ้ำ" จะบอกเหตุผลข้างๆ คลิกแถวเพื่อดูภาพกระดาษ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = คำตอบที่ถูก, ม่วง = ข้อมูลผู้สอบ</li>
+    <li><b>แถบเหลืองไฮไลต์</b> = ข้อหรือหลักที่ฝนไม่ครบ/ฝนหลายช่อง ใช้ปุ่ม ก่อนหน้า/ถัดไป เดินดูทีละใบ</li>
     <li>กด <b>ดาวน์โหลด CSV</b> เปิดใน Excel ได้ ภาษาไทยไม่เพี้ยน</li>
   </ol>
   <h3>ถ้าผลไม่ถูก</h3>
   <ol>
     <li>วงกลมหายหรือเกิน ลองปรับใน "ตั้งค่าขั้นสูง" (ความไวต่อขอบวงกลม / เกณฑ์ความเข้มของการฝน) แล้ววิเคราะห์ใหม่</li>
     <li>สแกนเอียงหรือซีดมาก ให้สแกนใหม่ที่ความละเอียดสูงขึ้น</li>
+    <li>ฟอร์มที่มี 2 ชุดข้อสอบ (ชุดที่ ① ②) ระบบยังไม่อ่านช่องชุด ให้แยกไฟล์และตั้งเฉลยแยกกัน</li>
   </ol>
 </section>
 <!-- ===== ขั้นที่ 1 ===== -->
@@ -830,8 +833,9 @@ function drawKey(){
   } else ctx.drawImage(an.canvas,0,0);
   const R=K.D/2, lw=Math.max(2,K.D/10), col={answer:'#2563eb',info:'#9333ea',raw:'#ea580c'};
   for (const b of K.blocks){
-    b.cells.forEach(row=>row.forEach(c=>{
-      const on=c.delta>=P.thr; ctx.beginPath(); ctx.arc(c.x,c.y,R*.95,0,7);
+    b.cells.forEach((row,ri)=>row.forEach((c,ci)=>{
+      const on=b.type==='answer' ? b.keyAns[ri]===ci : c.delta>=P.thr;   // บล็อกคำตอบ: แสดงตามเฉลยจริง (รวม CSV และที่แก้เอง)
+      ctx.beginPath(); ctx.arc(c.x,c.y,R*.95,0,7);
       if (on){ ctx.fillStyle='rgba(34,197,94,.5)'; ctx.fill(); ctx.strokeStyle='#16a34a'; } else ctx.strokeStyle=c.det?'rgba(110,110,110,.75)':'#dc2626';
       ctx.lineWidth=lw; ctx.stroke();
     }));
@@ -839,9 +843,11 @@ function drawKey(){
     const off=!b.use, bc=off?'#9ca3af':col[b.type];
     if (off){ ctx.fillStyle='rgba(235,235,235,.8)'; ctx.fillRect(x0,y0,x1-x0,y1-y0); }   // ไม่เลือก = ทับสีเทา
     ctx.strokeStyle=bc; ctx.lineWidth=lw*1.5; ctx.strokeRect(x0,y0,x1-x0,y1-y0);
-    const label = (b.type==='answer' ? `ข้อ ${b.qStart}–${b.qStart+b.rows.length-1}` : b.name)+(off?' · ไม่เลือก':'');
-    ctx.font=`bold ${Math.round(K.D*.7)}px sans-serif`; const tw=ctx.measureText(label).width+10;
-    ctx.fillStyle=bc; ctx.fillRect(x0,y0-K.D*.95,tw,K.D*.95); ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.fillText(label,x0+5,y0-K.D*.47);
+    const label = b.type==='answer' ? `ข้อ ${b.qStart}–${b.qStart+b.rows.length-1}` : b.name;
+    const lines = off ? [label,'ไม่เลือก'] : [label], lh=K.D*.95;   // ไม่เลือก = ขึ้นบรรทัดที่ 2 ป้ายจะได้ไม่ยาวไปบังส่วนอื่น
+    ctx.font=`bold ${Math.round(K.D*.7)}px sans-serif`; const tw=Math.max(...lines.map(t=>ctx.measureText(t).width))+10;
+    ctx.fillStyle=bc; ctx.fillRect(x0,y0-lh*lines.length,tw,lh*lines.length); ctx.fillStyle='#fff'; ctx.textBaseline='middle';
+    lines.forEach((t,n)=>ctx.fillText(t,x0+5,y0-lh*(lines.length-n)+lh/2));
   }
 }
 async function drawStudent(rec){
@@ -1143,7 +1149,9 @@ $('#resBody').onclick=e=>{ const tr=e.target.closest('tr[data-i]'); if (tr) open
 $('#onlyFlag').onchange=renderResults;
 async function openDetail(i){
   if (i<0||i>=S.results.length) return; S.sel=i; const r=S.results[i];
-  $('#detail').hidden=false; $('#detTitle').textContent=`หน้า ${r.page}`+(r.fail?'':` — ${r.score}/${S.key.graded.length}`);
+  $('#detail').hidden=false; const hi=t=>`<span style="color:var(--brand)">${esc(t)}</span>`;   // สีเน้นเฉพาะคะแนนที่ได้ และค่าข้อมูล
+  const extra=columns().other.map(n=>`${esc(n)}: ${hi(r.info?.[n]??r.raw?.[n]??'')}`).join(' · ');
+  $('#detTitle').innerHTML=esc(`หน้า ${r.page}`)+(r.fail?'':` — ${hi(r.score)}/${S.key.graded.length}`)+(extra?` <span style="font-weight:400;font-size:16px">· ${extra}</span>`:'');
   $('#detReasons').innerHTML=r.reasons.length?`<div class="alert warn">⚠ ${esc(r.reasons.join(' · '))}</div>`:'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
   document.querySelectorAll('#resBody tr').forEach(t=>t.classList.toggle('sel',+t.dataset.i===i));
   await drawStudent(r); $('#detail').scrollIntoView({behavior:'smooth',block:'nearest'});
