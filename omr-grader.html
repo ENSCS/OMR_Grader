@@ -15,7 +15,8 @@ body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 -apple-system
 h1,h2,h3{color:#000}
 input{accent-color:var(--brand)}
 header{padding:18px 20px 6px;max-width:1200px;margin:auto;position:relative}
-#guideBtn{position:absolute;right:20px;top:20px;padding:8px 16px;display:inline-flex;align-items:center;gap:6px}
+#hdrBtns{position:absolute;right:20px;top:20px;display:flex;gap:8px}
+#hdrBtns .btn{padding:8px 16px;display:inline-flex;align-items:center;gap:6px}
 a{color:var(--brand)}
 #guide{margin-bottom:16px}
 .fixgrid{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:6px}
@@ -23,7 +24,7 @@ a{color:var(--brand)}
 #guide ol{margin:6px 0 0;padding-left:22px}
 #guide li{margin:5px 0}
 #guide h3{margin:12px 0 2px;font-size:16px}
-@media(max-width:600px){#guideBtn{position:static;margin-top:8px}}
+@media(max-width:600px){#hdrBtns{position:static;margin-top:8px}}
 header h1{margin:0;font-size:30px}
 header p{margin:2px 0 0;color:var(--mut);font-size:16px}
 main{max-width:1200px;margin:auto;padding:8px 20px 60px;display:grid;gap:16px}
@@ -81,7 +82,10 @@ tr.sel{background:var(--ok-bg)}
 <body>
 <header>
   <h1>ตรวจข้อสอบ OMR</h1>
-  <button class="btn sec" id="guideBtn" type="button" aria-expanded="false" aria-controls="guide"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg> <span>คู่มือการใช้</span></button>
+  <div id="hdrBtns">
+    <button class="btn sec" id="guideBtn" type="button" aria-expanded="false" aria-controls="guide"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg> <span>คู่มือการใช้</span></button>
+  <button class="btn sec" id="resetBtn" type="button" title="ล้างทุกอย่างเหมือนรีเฟรชหน้า"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8.1 8.1 0 0 0-15.5-2m-.5-4v4h4"/><path d="M4 13a8.1 8.1 0 0 0 15.5 2m.5 4v-4h-4"/></svg> <span>เริ่มต้นใหม่</span></button>
+  </div>
   <p>ตั้งเฉลย (ฝนหรือ CSV) → ตรวจกระดาษคำตอบทั้งปึก → ได้คะแนนและ CSV · ทำงานในเครื่อง ไฟล์ไม่ถูกอัปโหลด</p>
 </header>
 
@@ -156,6 +160,7 @@ tr.sel{background:var(--ok-bg)}
       <div class="mut" id="prevCap"></div>
       <div class="mut"><b>ซ้าย</b> วงเขียว = ช่องที่อ่านว่าฝน · <b>ขวา</b> วงเขียว = วงกลมที่หาเจอ</div>
     </div>
+    <div class="mut" id="barStat" style="margin-top:8px"></div>
     <div class="row" style="margin-top:10px"><button class="btn sec" id="reKey" disabled>วิเคราะห์เฉลยใหม่</button></div>
   </details>
 
@@ -489,7 +494,7 @@ function clusterAxis(vals, D){
   }
   return cs;
 }
-function buildBlocks(circ, D, vlines=[]){
+function buildBlocks(circ, D, vlines=[], trimEdges=false){   // trimEdges: ใช้ตอนวิเคราะห์เฉลยเท่านั้น (ใบนักศึกษาจัดแบบเดิม)
   const n=circ.length; if (!n) return [];
   const nn=circ.map((a,i)=>{ let m=1e9; for (let j=0;j<n;j++){ if (j!==i){ const d=Math.hypot(a.x-circ[j].x,a.y-circ[j].y); if (d<m) m=d; } } return m; });
   const L=1.6*median(nn), par=circ.map((_,i)=>i);
@@ -516,10 +521,23 @@ function buildBlocks(circ, D, vlines=[]){
       if (keep.length===g.length) break; g=keep;
     }
     if (g.length<2) continue;
-    const cols=clusterAxis(g.map(c=>c.x),D), rows=clusterAxis(g.map(c=>c.y),D);
     const near=(arr,v)=>{ let bi=0; arr.forEach((a,i)=>{ if (Math.abs(a-v)<Math.abs(arr[bi]-v)) bi=i; }); return bi; };
+    // แถว/คอลัมน์ริมสุดที่ระยะห่างผิดจากระยะปกติของบล็อก = ไม่ใช่ของบล็อกนี้ (เช่น เลข 0 ลายมือในช่องเขียนเหนือบล็อกรหัส) → ตัดออก
+    for (let pass=0; pass<4 && trimEdges; pass++){
+      let cut=false;
+      for (const axis of ['y','x']){
+        const arr=clusterAxis(g.map(c=>c[axis]),D); if (arr.length<4) continue;
+        const d=arr.slice(1).map((v,i)=>v-arr[i]), pt=median(d), bad=v=>v>1.12*pt&&v<1.8*pt||v<0.88*pt;
+        if (bad(d[0])){ g=g.filter(c=>near(arr,c[axis])!==0); cut=true; }
+        else if (bad(d[d.length-1])){ g=g.filter(c=>near(arr,c[axis])!==arr.length-1); cut=true; }
+        if (cut) break;
+      }
+      if (!cut) break;
+    }
+    if (g.length<2) continue;
+    const cols=clusterAxis(g.map(c=>c.x),D), rows=clusterAxis(g.map(c=>c.y),D);
     const cells=rows.map(y=>cols.map(x=>({x,y,det:false})));
-    for (const c of g){ const cell=cells[near(rows,c.y)][near(cols,c.x)]; cell.x=c.x; cell.y=c.y; cell.det=true; }
+    for (const c of g){ const cell=cells[near(rows,c.y)][near(cols,c.x)]; cell.x=c.x; cell.y=c.y; cell.det=true; cell.bd=c.bd; }
     blocks.push({ cols, rows, cells, cx:cols.reduce((a,b)=>a+b,0)/cols.length, cy:rows.reduce((a,b)=>a+b,0)/rows.length });
   }
   return blocks;
@@ -543,8 +561,26 @@ function pick(ds, thr){
 const rng = list => { const out=[]; let i=0; list=[...list].sort((a,b)=>a-b); while(i<list.length){ let j=i; while(j+1<list.length && list[j+1]===list[j]+1) j++; out.push(i===j?list[i]:`${list[i]}-${list[j]}`); i=j+1; } return out.join(', '); };
 
 /* ---------- วิเคราะห์เฉลย: แยกประเภทบล็อกจากรูปแบบการฝน ---------- */
+// วงกลมจริงอยู่กลางแถบดำอ้างอิงของคอลัมน์ตัวเอง — วงที่เยื้องจากทุกแถบมากๆ (เช่น ห่วงของตัวหนังสือ อ ว ง ก) ไม่ใช่ช่องฝน
+// ใช้เมื่อวงส่วนใหญ่ (≥70%) ตรงกับแถบ = ฟอร์มนี้ออกแบบให้ตรงกัน ถ้าไม่ตรงทั้งแผ่น ไม่กรองอะไร
+function circlesOnBars(an){
+  const cs=an.det.circles, b=an.bars; if (!b || b.xs.length<6 || cs.length<20) return cs;
+  const gaps=b.xs.slice(1).map((x,i)=>x-b.xs[i]).filter(g=>g>2), g0=Math.min(...gaps), pitch=median(gaps.filter(g=>g<=1.5*g0));
+  if (!(pitch>0)) return cs;
+  const near=x=>b.xs.reduce((m,v)=>Math.min(m,Math.abs(v-x)),1e9);
+  cs.forEach(c=>{ c.bd=near(c.x)/pitch; });          // ระยะเยื้องจากแถบที่ใกล้สุด (หน่วย = ระยะห่างแถบ)
+  const ok=cs.filter(c=>c.bd<=0.22), use=ok.length>=0.7*cs.length;
+  an.barStat={ pct:Math.round(100*ok.length/cs.length), used:use, pitch:Math.round(pitch), drop:cs.length-ok.length };   // ไว้แสดงในผลวิเคราะห์เฉลย
+  return use ? ok : cs;
+}
 function analyzeKey(an){
-  const D=an.det.D, blocks=buildBlocks(an.det.circles,D,an.det.vlines), offs=makeOffsets(0.3*D), warns=[];
+  const D=an.det.D, offs=makeOffsets(0.3*D), warns=[];
+  // แถวเดียวยาวๆ (≥4 วง) = ตัวหนังสือบรรทัดเดียว (อ ว ง ก … เป็นวงปิด) ไม่ใช่ช่องฝน
+  const blocks=buildBlocks(circlesOnBars(an),D,an.det.vlines,true).filter(b=>{
+    if (b.rows.length!==1) return true;
+    if (b.cols.length>=4) return false;                                  // แถวเดียวยาวๆ = ตัวหนังสือ
+    return b.cells[0].every(c=>!c.det || c.bd===undefined || c.bd<=0.12);   // แถวเดียวสั้นๆ ต้องอยู่กลางแถบเป๊ะๆ
+  });
   const all=[];
   for (const b of blocks) for (const row of b.cells) for (const c of row){ c.score=measure(an.prep,c.x,c.y,offs); all.push(c.score); }
   const baseline=median(all);
@@ -960,6 +996,7 @@ function renderKey(){
     `<b>คะแนนเต็ม = ${K.graded.length} ข้อ</b> (ฟอร์มมี ${K.nq} ข้อ)`,
     S.keyAn.strip.found ? `หมุนภาพอัตโนมัติ ${S.keyAn.quarter}°` : '',
     K.csvInfo||''].filter(Boolean);
+  { const b=S.keyAn.barStat; $('#barStat').textContent=b?`วงกลมตรงกลางแถบดำ ${b.pct}% (${b.used?'กรองวงที่เยื้อง '+b.drop+' วง':'ไม่ตรงพอ จึงไม่กรอง'})`:''; }   // อยู่ใน "ตั้งค่าขั้นสูง"
   $('#keyMsg').innerHTML=`<div class="alert ok">${parts.join('<br>')}</div>`+K.warns.map(w=>/^(ยังไม่มีเฉลย|CSV ไม่มีเฉลย)/.test(w)?`<div class="alert ok">ℹ ${esc(w)}</div>`:`<div class="alert warn">⚠ ${esc(w)}</div>`).join('');
   const typeName={answer:'คำตอบ',info:'ข้อมูลผู้สอบ',raw:'ช่องดิบ (เฉลยไม่ฝน)'};
   const all=[...K.answers,...K.others];
@@ -1112,6 +1149,12 @@ $('#csvFile').onchange=async e=>{
   const f=e.target.files[0]; e.target.value=''; if (!f) return;
   try{ S.csv=loadCsvKey(await f.text(), f.name); csvChanged(); }
   catch(err){ $('#csvName').textContent='อ่าน CSV ไม่ได้: '+(err.message||err); }
+};
+// เริ่มต้นใหม่ = ล้างทุกอย่าง (เหมือนรีเฟรชหน้า)
+$('#resetBtn').onclick=()=>{
+  const has=S.keyFile||S.csv||S.results.length;
+  if (has && !confirm('ล้างทุกอย่างและเริ่มใหม่? เฉลยและผลที่ตรวจไว้จะหายทั้งหมด (ดาวน์โหลด CSV ไว้ก่อนหรือยัง)')) return;
+  location.reload();
 };
 $('#guideBtn').onclick=()=>{ const g=$('#guide'); g.hidden=!g.hidden; $('#guideBtn').setAttribute('aria-expanded',String(!g.hidden)); $('#guideBtn').lastElementChild.textContent=g.hidden?'คู่มือการใช้':'ปิดคู่มือ'; };
 $('#csvClear').onclick=()=>{ S.csv=null; csvChanged(); };
