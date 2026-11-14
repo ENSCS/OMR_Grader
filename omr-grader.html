@@ -101,7 +101,7 @@ tr.sel{background:var(--ok-bg)}
   </ol>
   <h3>ขั้นที่ 2 ตรวจกระดาษคำตอบ</h3>
   <ol>
-    <li>เลือก PDF นักศึกษา คลิกแถวเพื่อดูภาพ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = เฉลย, ม่วง = ข้อมูลผู้สอบ</li>
+    <li>เลือก PDF นักศึกษา (หลายไฟล์พร้อมกันได้) <b>เลือกเพิ่มทีหลังได้</b> ผลจะนับต่อจากเดิม รวมในตาราง CSV และกราฟ ใช้เฉลยเดียวกัน (เช่น หลายตอนเรียน) · "ล้างผลทั้งหมด" เพื่อเริ่มใหม่ · เปลี่ยนเฉลยแล้วผลที่ตรวจไว้จะถูกล้าง · คลิกแถวเพื่อดูภาพ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = เฉลย, ม่วง = ข้อมูลผู้สอบ</li>
     <li>ใบ "ต้องตรวจซ้ำ" มีแถบเหลืองชี้ข้อ/หลักที่ฝนไม่ครบหรือหลายช่อง แก้ได้ในกล่อง <b>แก้คำตอบ</b> คะแนนและ CSV อัปเดตตาม สถานะเป็น "แก้ไขแล้ว (เดิม … : แก้แล้ว …)" · ผลแก้อยู่ในหน้าเว็บเท่านั้น แก้ให้ครบก่อนดาวน์โหลด</li>
     <li>กด <b>ดาวน์โหลด CSV</b> (เปิดใน Excel ภาษาไทยไม่เพี้ยน)</li>
     <li>ปุ่ม <b>กราฟคะแนน</b> คลี่การ์ด Histogram (แกนนอน = คะแนน เริ่ม 0 ทางซ้าย) พร้อมค่าเฉลี่ย/มัธยฐาน/สูง-ต่ำสุด ใช้คะแนนหลังแก้ไขแล้ว</li>
@@ -197,11 +197,13 @@ tr.sel{background:var(--ok-bg)}
 <section class="card locked" id="s2">
   <h2><span class="num">2</span>ตรวจกระดาษคำตอบ</h2>
   <div class="row">
-    <label class="btn">เลือก PDF กระดาษคำตอบ (หลายหน้า)
-      <input type="file" id="stuFile" accept=".pdf,image/*" hidden>
+    <label class="btn">เลือก PDF กระดาษคำตอบ
+      <input type="file" id="stuFile" accept=".pdf,image/*" multiple hidden>
     </label>
+    <button class="btn sec" id="stuClear" type="button" hidden>ล้างผลทั้งหมด</button>
     <span class="mut" id="stuName">1 หน้า = 1 คน</span>
   </div>
+  <div class="mut" style="margin-top:4px">เลือกได้หลายไฟล์พร้อมกัน และ <b>เลือกเพิ่มทีหลังได้</b> — ผลจะนับต่อจากเดิม รวมในตารางและกราฟ ใช้เฉลยเดียวกัน (เช่น หลายตอนเรียน) · ต้องการเริ่มใหม่กด "ล้างผลทั้งหมด"</div>
   <div class="bar" id="stuBar" hidden><i></i></div>
   <div class="mut" id="stuProg"></div>
 
@@ -220,7 +222,7 @@ tr.sel{background:var(--ok-bg)}
     <div class="card" id="chartCard" hidden style="margin-top:10px">
       <h3 style="margin:0 0 4px">กราฟคะแนน (Histogram)</h3>
       <div class="mut" id="chartStat" style="margin-bottom:6px"></div>
-      <div id="chartBox" style="overflow-x:auto"></div>
+      <div id="chartBox"></div>
     </div>
     <div id="sumLine" class="mut" style="margin-top:8px"></div>
     <div class="tblwrap" style="margin-top:8px"><table><thead id="resHead"></thead><tbody id="resBody"></tbody></table></div>
@@ -859,7 +861,7 @@ function drawKey(){
 }
 async function drawStudent(rec){
   const cv=$('#detCanvas'), ctx=cv.getContext('2d');
-  let c=rotateQuarter(await S.stuSrc.render(rec.page), rec.quarter/90); if (rec.angle) c=rotateCanvas(c,rec.angle);
+  let c=rotateQuarter(await rec.src.render(rec.page), rec.quarter/90); if (rec.angle) c=rotateCanvas(c,rec.angle);
   cv.width=c.width; cv.height=c.height; ctx.drawImage(c,0,0);
   if (!rec.cells.length) return;
   const R=rec.R*.95, lw=Math.max(2,R/5), K=S.key; let i=0;
@@ -1066,6 +1068,7 @@ function editAnswer(q, col){
 // เลือก/ไม่เลือกบล็อกคำตอบ → คิดคะแนนใหม่ ต้องตรวจกระดาษใหม่
 function toggledAnswer(){ recomputeGraded(S.key); S.results=[]; $('#stuOut').hidden=true; renderKey(); }
 function setConfirmed(v){
+  updateStuName();
   S.confirmed=v; $('#s2').classList.toggle('locked',!v);
   $('#confirmKey').textContent=v?'✓ ยืนยันแล้ว':'ยืนยันเฉลย'; $('#confirmKey').disabled=v;
   $('#confirmNote').textContent=v?'ไปขั้นที่ 2 ได้เลย — ถ้าแก้ไขการตั้งค่า ต้องวิเคราะห์เฉลยและยืนยันใหม่':'ตรวจเทียบกับกระดาษจริงก่อนกดยืนยัน';
@@ -1177,10 +1180,10 @@ function renderChart(){
   const n=sc.length, mean=sc.reduce((a,b)=>a+b,0)/n, sorted=[...sc].sort((a,b)=>a-b), med=n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
   const sd=Math.sqrt(sc.reduce((a,b)=>a+(b-mean)**2,0)/n);
   $('#chartStat').textContent=`${n} ใบ · เฉลี่ย ${mean.toFixed(1)} · มัธยฐาน ${med} · ต่ำสุด ${sorted[0]} · สูงสุด ${sorted[n-1]} · S.D. ${sd.toFixed(1)} · คะแนนเต็ม ${full}`;
-  const w=Math.max(1,Math.ceil((full+1)/40)), nb=Math.floor(full/w)+1, cnt=Array(nb).fill(0);   // แต่ละแท่ง = w คะแนน (ไม่เกิน ~40 แท่ง)
+  const w=1, nb=full+1, cnt=Array(nb).fill(0);   // แท่งละ 1 คะแนนเสมอ
   sc.forEach(v=>cnt[Math.min(nb-1,Math.floor(v/w))]++);
   const mx=Math.max(...cnt), top=Math.max(1,mx), step=top<=8?1:top<=20?2:top<=50?5:10, yMax=Math.ceil(top/step)*step;
-  const W=Math.max(560,nb*22+80), H=260, L=44, B=40, T=14, R=14, pw=W-L-R, ph=H-T-B, bw=pw/nb;
+  const W=Math.max(640,nb*12+80), H=260, L=44, B=40, T=14, R=14, pw=W-L-R, ph=H-T-B, bw=pw/nb;
   let g='';
   for (let y=0;y<=yMax;y+=step){ const yy=T+ph-ph*y/yMax; g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="currentColor" opacity=".15"/><text x="${L-6}" y="${yy+4}" text-anchor="end" font-size="12" fill="currentColor">${y}</text>`; }
   cnt.forEach((c,i)=>{
@@ -1189,20 +1192,22 @@ function renderChart(){
     if (nb<=24 || i%Math.ceil(nb/24)===0) g+=`<text x="${x+bw/2}" y="${H-B+16}" text-anchor="middle" font-size="12" fill="currentColor">${w===1?lo:lo}</text>`;
   });
   g+=`<line x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}" stroke="currentColor" opacity=".5"/><text x="${L+pw/2}" y="${H-6}" text-anchor="middle" font-size="13" fill="currentColor">คะแนน${w>1?` (แท่งละ ${w} คะแนน)`:''}</text><text transform="translate(12 ${T+ph/2}) rotate(-90)" text-anchor="middle" font-size="13" fill="currentColor">จำนวนคน</text>`;
-  $('#chartBox').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Histogram คะแนน" style="color:var(--ink)">${g}</svg>`;
+  $('#chartBox').innerHTML=`<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Histogram คะแนน" style="color:var(--ink);display:block;width:100%;height:auto">${g}</svg>`;
 }
 $('#chartBtn').onclick=()=>{
   const c=$('#chartCard'); c.hidden=!c.hidden; $('#chartBtn').setAttribute('aria-expanded',String(!c.hidden)); renderChart();
 };
 function renderResults(){
+  updateStuName();
   if (!S.key || !S.results.length && $('#stuOut').hidden) return;
   const K=S.key, cols=columns(), only=$('#onlyFlag').checked;
-  const head=['หน้า',...cols.other,'คะแนน','สถานะ'];
+  const multi=new Set(S.results.map(r=>r.file)).size>1;   // มีหลายไฟล์ → แสดงคอลัมน์ไฟล์
+  const head=['หน้า',...(multi?['ไฟล์']:[]),...cols.other,'คะแนน','สถานะ'];
   $('#colPreview').innerHTML=['ลำดับหน้า PDF',...cols.other,'คะแนนรวม','คะแนนเต็ม ('+K.graded.length+')','สถานะ',`ข้อ ${cols.qs[0]??''} … ข้อ ${cols.qs[cols.qs.length-1]??''} (${cols.qs.length} คอลัมน์)`].map(x=>`<span class="chip">${esc(x)}</span>`).join('');
   $('#resHead').innerHTML='<tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
   $('#resBody').innerHTML=S.results.map((r,i)=>({r,i})).filter(({r})=>!only||r.status!=='ok').map(({r,i})=>{
     const badge=r.status==='ok'?'<span class="badge ok">ปกติ</span>':r.status==='fixed'?`<span class="badge ok" style="background:#fff3bf;color:#7a5b00">แก้ไขแล้ว</span> <span class="mut">${fixNote(r)}</span>`:`<span class="badge ${r.fail?'bad':'warn'}">ต้องตรวจซ้ำ</span> <span class="mut">${esc(r.reasons.join(' · '))}</span>`;
-    return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${cols.other.map(n=>`<td>${esc(r.info?.[n]??r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
+    return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${multi?`<td>${esc(r.file||'')}</td>`:''}${cols.other.map(n=>`<td>${esc(r.info?.[n]??r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
   }).join('');
   const flagged=S.results.filter(r=>r.status==='check').length, nFixed=S.results.filter(r=>r.status==='fixed').length, okR=S.results.filter(r=>!r.fail);
   renderChart();
@@ -1214,7 +1219,7 @@ async function openDetail(i){
   if (i<0||i>=S.results.length) return; S.sel=i; const r=S.results[i];
   $('#detail').hidden=false; const hi=t=>`<span style="color:var(--brand)">${esc(t)}</span>`;   // สีเน้นเฉพาะคะแนนที่ได้ และค่าข้อมูล
   const extra=columns().other.map(n=>`${esc(n)}: ${hi(r.info?.[n]??r.raw?.[n]??'')}`).join(' · ');
-  $('#detTitle').innerHTML=esc(`หน้า ${r.page}`)+(r.fail?'':` — ${hi(r.score)}/${S.key.graded.length}`)+(extra?` <span style="font-weight:400;font-size:16px">· ${extra}</span>`:'');
+  $('#detTitle').innerHTML=esc(`หน้า ${r.page}`+(new Set(S.results.map(x=>x.file)).size>1?` (${r.file})`:''))+(r.fail?'':` — ${hi(r.score)}/${S.key.graded.length}`)+(extra?` <span style="font-weight:400;font-size:16px">· ${extra}</span>`:'');
   renderFix(r);
   $('#detReasons').innerHTML=r.reasons.length?`<div class="alert warn">⚠ ${esc(r.reasons.join(' · '))}</div>`:r.status==='fixed'?`<div class="alert ok">แก้ไขแล้ว ${esc(fixNote(r))}</div>`:'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
   document.querySelectorAll('#resBody tr').forEach(t=>t.classList.toggle('sel',+t.dataset.i===i));
@@ -1225,35 +1230,49 @@ $('#detPrev').onclick=()=>openDetail(S.sel-1);
 $('#detNext').onclick=()=>openDetail(S.sel+1);
 
 $('#stuFile').onchange=async e=>{
-  const f=e.target.files[0]; if (!f||!S.key) return;
-  $('#stuName').textContent=f.name; S.results=[]; S.sel=-1; $('#detail').hidden=true;
+  const files=[...e.target.files]; e.target.value=''; if (!files.length||!S.key) return;
+  const done=new Set(S.results.map(r=>r.file));
+  const dup=files.filter(f=>done.has(f.name));
+  if (dup.length && !confirm(`ไฟล์ ${dup.map(f=>f.name).join(', ')} ตรวจไปแล้ว\nตรวจซ้ำและนับเพิ่มอีกหรือไม่? (ผลจะซ้ำกัน)`)) return;
+  S.sel=-1; $('#detail').hidden=true;
   const bar=$('#stuBar'), prog=$('#stuProg'); bar.hidden=false; $('#stuOut').hidden=false;
   try{
-    S.stuSrc=await openSource(f); const n=S.stuSrc.n, t0=performance.now();
-    for (let p=1;p<=n;p++){
-      prog.textContent=`กำลังตรวจหน้า ${p} / ${n}…`; bar.firstElementChild.style.width=((p-1)/n*100)+'%'; await tick();
-      try{ S.results.push(gradeStudent(analyze(await S.stuSrc.render(p),false),p)); }
-      catch(err){ console.error(err); S.results.push({ page:p, status:'check', fail:true, reasons:['เกิดข้อผิดพลาด: '+err.message], info:{}, raw:{}, given:{}, cells:[] }); }
-      if (p%3===0||p===n) renderResults();
+    for (const f of files){
+      const src=await openSource(f), n=src.n, t0=performance.now();
+      for (let p=1;p<=n;p++){
+        prog.textContent=`${f.name}: กำลังตรวจหน้า ${p} / ${n}…`; bar.firstElementChild.style.width=((p-1)/n*100)+'%'; await tick();
+        let rec;
+        try{ rec=gradeStudent(analyze(await src.render(p),false),p); }
+        catch(err){ console.error(err); rec={ page:p, status:'check', fail:true, reasons:['เกิดข้อผิดพลาด: '+err.message], info:{}, raw:{}, given:{}, cells:[] }; }
+        rec.file=f.name; rec.src=src; S.results.push(rec);
+        if (p%3===0||p===n) renderResults();
+      }
+      bar.firstElementChild.style.width='100%';
+      prog.textContent=`เสร็จแล้ว ${f.name} ${n} หน้า (ใช้เวลา ${((performance.now()-t0)/1000).toFixed(0)} วินาที) · รวมทั้งหมด ${S.results.length} ใบ — เลือกไฟล์เพิ่มได้`;
     }
-    bar.firstElementChild.style.width='100%';
-    prog.textContent=`เสร็จแล้ว ${n} หน้า (ใช้เวลา ${((performance.now()-t0)/1000).toFixed(0)} วินาที)`;
     renderResults();
   }catch(err){ console.error(err); prog.innerHTML=`<div class="alert bad">${esc(err.message)}</div>`; }
 };
+$('#stuClear').onclick=()=>{ if (!S.results.length || !confirm(`ล้างผลที่ตรวจแล้ว ${S.results.length} ใบ?`)) return; S.results=[]; S.sel=-1; $('#detail').hidden=true; $('#stuOut').hidden=true; $('#stuProg').textContent=''; $('#stuBar').hidden=true; updateStuName(); };
+function updateStuName(){
+  const fs=[...new Set(S.results.map(r=>r.file))];
+  $('#stuName').textContent=fs.length?(fs.length>2?`${fs.length} ไฟล์`:fs.join(', '))+` · ${S.results.length} ใบ`:'1 หน้า = 1 คน';
+  $('#stuClear').hidden=!fs.length;
+}
 
 /* ---------- CSV (UTF-8 BOM เปิดใน Excel แล้วภาษาไทยไม่เพี้ยน) ---------- */
 $('#dlCsv').onclick=()=>{
   const K=S.key, cols=columns(), asText=$('#csvText').checked, mode=$('#csvMode').value;
   const q=v=>`"${String(v??'').replace(/"/g,'""')}"`, txt=v=>asText&&v!==''?`="${v}"`:q(v);
-  const lines=[[ 'ลำดับหน้า',...cols.other,'คะแนนรวม','คะแนนเต็ม','สถานะ',...cols.qs.map(n=>'ข้อ '+n) ].map(q).join(',')];
+  const multiF=new Set(S.results.map(r=>r.file)).size>1;
+  const lines=[[ 'ลำดับหน้า',...(multiF?['ไฟล์']:[]),...cols.other,'คะแนนรวม','คะแนนเต็ม','สถานะ',...cols.qs.map(n=>'ข้อ '+n) ].map(q).join(',')];
   for (const r of S.results){
     const ans=cols.qs.map(n=>{
       const g=r.given?.[n]; if (g===undefined) return '';
       if (mode==='ok') return +(g===K.graded.find(x=>x.q===n).col);
       return g===-1?'-':g===-2?'*':optLabel(g);
     });
-    lines.push([ q(r.page), ...cols.other.map(n=>txt(r.info?.[n]??r.raw?.[n]??'')), q(r.fail?'':r.score), q(K.graded.length),
+    lines.push([ q(r.page), ...(multiF?[q(r.file)]:[]), ...cols.other.map(n=>txt(r.info?.[n]??r.raw?.[n]??'')), q(r.fail?'':r.score), q(K.graded.length),
       q(r.status==='ok'?'ปกติ':r.status==='fixed'?'แก้ไขแล้ว '+fixNote(r):'ต้องตรวจซ้ำ: '+r.reasons.join(' | ')), ...ans.map(q) ].join(','));
   }
   const url=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
