@@ -15,8 +15,10 @@ body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 -apple-system
 h1,h2,h3{color:#000}
 input{accent-color:var(--brand)}
 header{padding:18px 20px 6px;max-width:1200px;margin:auto;position:relative}
-#guideBtn{position:absolute;right:20px;top:20px;padding:8px 16px}
+#guideBtn{position:absolute;right:20px;top:20px;padding:8px 16px;display:inline-flex;align-items:center;gap:6px}
 #guide{margin-bottom:16px}
+.fixgrid{display:flex;flex-wrap:wrap;gap:8px 18px;margin-top:6px}
+.fixgrid select{font:inherit;margin-left:4px}
 #guide ol{margin:6px 0 0;padding-left:22px}
 #guide li{margin:5px 0}
 #guide h3{margin:12px 0 2px;font-size:16px}
@@ -78,7 +80,7 @@ tr.sel{background:var(--ok-bg)}
 <body>
 <header>
   <h1>ตรวจข้อสอบ OMR</h1>
-  <button class="btn sec" id="guideBtn" type="button" aria-expanded="false" aria-controls="guide">📖 คู่มือการใช้</button>
+  <button class="btn sec" id="guideBtn" type="button" aria-expanded="false" aria-controls="guide"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg> <span>คู่มือการใช้</span></button>
   <p>ประมวลผลในเครื่องของคุณทั้งหมด ไฟล์สแกนไม่ถูกอัปโหลดไปไหน — ให้เฉลยสอนโปรแกรมว่าฟอร์มหน้าตาเป็นอย่างไร</p>
 </header>
 
@@ -87,32 +89,26 @@ tr.sel{background:var(--ok-bg)}
   <h2 style="margin-top:0">คู่มือการใช้</h2>
   <h3>เตรียมไฟล์</h3>
   <ol>
-    <li>สแกนเป็น PDF สีหรือ grayscale ตั้งแต่ 200 dpi ขึ้นไป (ไม่ใช้ขาวดำล้วน) 1 หน้า = 1 คน ใช้ฟอร์มชุดเดียวกันทั้งไฟล์</li>
-    <li>ไฟล์ไม่ถูกอัปโหลดไปไหน ประมวลผลในเครื่องของคุณทั้งหมด</li>
+    <li>สแกน PDF สี/grayscale ≥ 200 dpi, 1 หน้า = 1 คน, ฟอร์มชุดเดียวกันทั้งไฟล์ (ประมวลผลในเครื่อง ไม่อัปโหลด)</li>
   </ol>
-  <h3>ขั้นที่ 1 ตั้งเฉลย (เลือกวิธีใดวิธีหนึ่ง)</h3>
+  <h3>ขั้นที่ 1 ตั้งเฉลย (เลือก 1 วิธี)</h3>
   <ol>
-    <li><b>ฟอร์ม SCI:</b> กด <b>ใช้ฟอร์ม SCI มาตรฐาน (กระดาษเปล่า)</b> แล้วอัปโหลด CSV เฉลยต่อ ไม่ต้องสแกนเฉลย</li>
-    <li><b>ฟอร์มอื่น แบบฝนเฉลย:</b> กด <b>เลือกไฟล์เฉลย</b> เลือก PDF/ภาพที่ฝนเฉลยแล้ว (ใช้หน้าแรก)</li>
-    <li><b>ฟอร์มอื่น แบบ CSV:</b> เลือกไฟล์กระดาษเปล่า แล้วกด <b>เลือกไฟล์ CSV เฉลย</b> ถ้ายังไม่มีกด "ดาวน์โหลดไฟล์ CSV ตัวอย่าง" กรอกข้อ/เฉลย (1–5 / ก–จ / A–E ว่าง = ไม่นับ) แล้วเลือกกลับเข้ามา</li>
-    <li>ดูภาพ: เขียว = เฉลยที่ใช้ (จาก CSV หรือที่ฝน), เทา = ช่องที่ไม่ฝน, แดง = ช่องที่หาไม่เจอ ตรวจว่าครบตามกระดาษจริง</li>
-    <li>เฉลยผิด แก้ได้ในตาราง "เฉลยที่อ่านได้" ไม่ต้องสแกนใหม่</li>
-    <li>บล็อกที่ไม่ต้องการ (เช่น ช่องลายมือที่ถูกนับเป็นช่อง บล็อกที่สแกนตัดขอบ หรือข้อที่ไม่ใช้) <b>คลิกกรอบในภาพ</b> หรือติ๊กออกในตาราง จะเป็นสีเทา ไม่ออก CSV และไม่คิดคะแนน (เปลี่ยนแล้วต้องตรวจกระดาษใหม่)</li>
-    <li>ตั้งชื่อบล็อกข้อมูลได้ (เช่น รหัสนักศึกษา) ชื่อนี้จะเป็นหัวคอลัมน์ใน CSV</li>
-    <li>ถูกต้องแล้วกด <b>ยืนยันเฉลย</b></li>
+    <li><b>ฟอร์ม SCI:</b> กด "ใช้ฟอร์ม SCI มาตรฐาน" แล้วอัปโหลด CSV เฉลย</li>
+    <li><b>ฟอร์มอื่น:</b> เลือกไฟล์เฉลยที่ฝนแล้ว หรือกระดาษเปล่า + CSV เฉลย (ดาวน์โหลดตัวอย่างได้ · ข้อ, เฉลย 1–5 / ก–จ / A–E)</li>
+    <li>ตรวจภาพ: เขียว = เฉลย, เทา = ไม่ฝน, แดง = หาช่องไม่เจอ · เฉลยผิดแก้ได้ในตาราง</li>
+    <li>บล็อกที่ไม่ใช้ <b>คลิกกรอบในภาพ</b> (หรือติ๊กออกในตาราง) จะเป็นสีเทา ไม่คิดคะแนน ไม่ออก CSV</li>
+    <li>ตั้งชื่อบล็อกข้อมูล (หัวคอลัมน์ CSV) แล้วกด <b>ยืนยันเฉลย</b></li>
   </ol>
   <h3>ขั้นที่ 2 ตรวจกระดาษคำตอบ</h3>
   <ol>
-    <li>เลือก PDF กระดาษคำตอบของนักศึกษา รอตรวจ (ประมาณ 0.3 วินาทีต่อใบ)</li>
-    <li>ดูตารางผล ใบที่ขึ้น "ต้องตรวจซ้ำ" จะบอกเหตุผลข้างๆ คลิกแถวเพื่อดูภาพกระดาษ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = คำตอบที่ถูก, ม่วง = ข้อมูลผู้สอบ</li>
-    <li><b>แถบเหลืองไฮไลต์</b> = ข้อหรือหลักที่ฝนไม่ครบ/ฝนหลายช่อง ใช้ปุ่ม ก่อนหน้า/ถัดไป เดินดูทีละใบ</li>
-    <li>กด <b>ดาวน์โหลด CSV</b> เปิดใน Excel ได้ ภาษาไทยไม่เพี้ยน</li>
+    <li>เลือก PDF นักศึกษา คลิกแถวเพื่อดูภาพ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = เฉลย, ม่วง = ข้อมูลผู้สอบ</li>
+    <li>ใบ "ต้องตรวจซ้ำ" มีแถบเหลืองชี้ข้อ/หลักที่ฝนไม่ครบหรือหลายช่อง แก้ได้ในกล่อง <b>แก้คำตอบ</b> คะแนนและ CSV อัปเดตตาม สถานะเป็น "แก้ไขแล้ว (เดิม … : แก้แล้ว …)" · ผลแก้อยู่ในหน้าเว็บเท่านั้น แก้ให้ครบก่อนดาวน์โหลด</li>
+    <li>กด <b>ดาวน์โหลด CSV</b> (เปิดใน Excel ภาษาไทยไม่เพี้ยน)</li>
   </ol>
   <h3>ถ้าผลไม่ถูก</h3>
   <ol>
-    <li>วงกลมหายหรือเกิน ลองปรับใน "ตั้งค่าขั้นสูง" (ความไวต่อขอบวงกลม / เกณฑ์ความเข้มของการฝน) แล้ววิเคราะห์ใหม่</li>
-    <li>สแกนเอียงหรือซีดมาก ให้สแกนใหม่ที่ความละเอียดสูงขึ้น</li>
-    <li>ฟอร์มที่มี 2 ชุดข้อสอบ (ชุดที่ ① ②) ระบบยังไม่อ่านช่องชุด ให้แยกไฟล์และตั้งเฉลยแยกกัน</li>
+    <li>ปรับ "ตั้งค่าขั้นสูง" (ความไวต่อขอบวงกลม / เกณฑ์ความเข้มของการฝน) หรือสแกนใหม่ให้ชัดขึ้น</li>
+    <li>ข้อสอบ 2 ชุด (① ②) ระบบไม่อ่านช่องชุด ให้แยกไฟล์และเฉลย</li>
   </ol>
 </section>
 <!-- ===== ขั้นที่ 1 ===== -->
@@ -225,6 +221,7 @@ tr.sel{background:var(--ok-bg)}
     <div id="detail" hidden>
       <h3 id="detTitle"></h3>
       <div id="detReasons"></div>
+      <div id="detFix"></div>
       <div class="row">
         <button class="btn sec" id="detPrev">‹ ก่อนหน้า</button>
         <button class="btn sec" id="detNext">ถัดไป ›</button>
@@ -770,7 +767,7 @@ function gradeStudent(an, page){
   grid.forEach(g=>g.forEach(r=>r.forEach(c=>{ c.delta=c.s-base; c.m=false; c.state='blank'; })));
   const bIdx=new Map(K.blocks.map((b,i)=>[b,i]));
 
-  rec.hl=[]; const hlBox=cs=>{ const R=D/2*1.25; rec.hl.push({ x0:Math.min(...cs.map(c=>c.x))-R, x1:Math.max(...cs.map(c=>c.x))+R, y0:Math.min(...cs.map(c=>c.y))-R, y1:Math.max(...cs.map(c=>c.y))+R }); };
+  rec.hl=[]; const hlBox=(cs,q)=>{ const R=D/2*1.25; rec.hl.push({ q, x0:Math.min(...cs.map(c=>c.x))-R, x1:Math.max(...cs.map(c=>c.x))+R, y0:Math.min(...cs.map(c=>c.y))-R, y1:Math.max(...cs.map(c=>c.y))+R }); };
   // บล็อกข้อมูลผู้สอบ: ตำแหน่งแถวที่ฝนในแต่ละคอลัมน์ = ตัวเลข
   for (const b of K.infos){
     if (!b.use) continue;
@@ -796,12 +793,12 @@ function gradeStudent(an, page){
     rec.raw[b.name]=val;
   }
   // บล็อกคำตอบ
-  const miss=[], multi=[]; let score=0;
+  const miss=[], multi=[], cand={}; let score=0; const baseReasons=reasons.slice(), qRows={};
   for (const b of K.answers){
     const g=grid[bIdx.get(b)];
     b.cells.forEach((_,r)=>{
       const k=b.keyAns[r]; if (k===null){ g[r].forEach(c=>c.state='skip'); return; }
-      const q=b.qStart+r, idx=pick(g[r].map(c=>c.delta),P.thr);
+      const q=b.qStart+r; qRows[q]=g[r]; const idx=pick(g[r].map(c=>c.delta),P.thr);
       idx.forEach(i=>{ g[r][i].m=true; });
       if (idx.length===1){
         rec.given[q]=idx[0];
@@ -809,7 +806,7 @@ function gradeStudent(an, page){
       } else {
         rec.given[q]=idx.length?-2:-1;
         if (idx.length) { multi.push(q); idx.forEach(i=>g[r][i].state='bad'); } else miss.push(q);
-        hlBox(g[r]);
+        hlBox(g[r],q); cand[q]=idx;
         g[r][k].state='key';
       }
     });
@@ -817,7 +814,10 @@ function gradeStudent(an, page){
   if (miss.length) reasons.push(`ฝนไม่ครบ: ข้อ ${rng(miss)}`);
   if (multi.length) reasons.push(`ฝนหลายช่อง: ข้อ ${rng(multi)}`);
   rec.score=score; rec.status=reasons.length?'check':'ok';
-  K.blocks.forEach((b,i)=>b.cells.forEach((row,r)=>row.forEach((_,c)=>{ const x=grid[i][r][c]; rec.cells.push({ x:x.x, y:x.y, m:x.m, st:x.state }); })));
+  K.blocks.forEach((b,i)=>b.cells.forEach((row,r)=>row.forEach((_,c)=>{ const x=grid[i][r][c]; x.rec={ x:x.x, y:x.y, m:x.m, st:x.state }; rec.cells.push(x.rec); })));
+  // เก็บข้อมูลไว้ให้แก้คำตอบข้อที่ต้องตรวจซ้ำได้ภายหลัง
+  rec.origScore=score; rec.fixes={}; rec.baseReasons=baseReasons; rec.miss=miss; rec.multi=multi; rec.cand=cand;
+  rec.qCells={}; for (const q in qRows) rec.qCells[q]=qRows[q].map(c=>c.rec);
   rec.R=D/2;
   return rec;
 }
@@ -858,7 +858,7 @@ async function drawStudent(rec){
   const R=rec.R*.95, lw=Math.max(2,R/5), K=S.key; let i=0;
   const style={ ok:['rgba(34,197,94,.5)','#16a34a'], bad:['rgba(220,38,38,.45)','#dc2626'], key:[null,'#2563eb'], mark:['rgba(147,51,234,.5)','#9333ea'], blank:[null,'rgba(150,150,150,.6)'], skip:[null,'rgba(150,150,150,.35)'] };
   ctx.save(); ctx.globalCompositeOperation='multiply';   // ไฮไลต์เหลืองสะท้อนแสง วางใต้วงที่ฝนให้ยังเห็นรอยฝน
-  for (const h of rec.hl||[]){ ctx.fillStyle='rgba(255,240,0,.75)'; ctx.fillRect(h.x0,h.y0,h.x1-h.x0,h.y1-h.y0); ctx.strokeStyle='rgba(255,200,0,.95)'; ctx.lineWidth=Math.max(3,R/3); ctx.strokeRect(h.x0,h.y0,h.x1-h.x0,h.y1-h.y0); }
+  for (const h of (rec.hl||[]).filter(h=>!h.off)){ ctx.fillStyle='rgba(255,240,0,.75)'; ctx.fillRect(h.x0,h.y0,h.x1-h.x0,h.y1-h.y0); ctx.strokeStyle='rgba(255,200,0,.95)'; ctx.lineWidth=Math.max(3,R/3); ctx.strokeRect(h.x0,h.y0,h.x1-h.x0,h.y1-h.y0); }
   ctx.restore();
   for (const cell of rec.cells){ const [fill,stroke]=style[cell.st]||style.blank; ctx.beginPath(); ctx.arc(cell.x,cell.y,R,0,7); if(fill){ctx.fillStyle=fill;ctx.fill();} ctx.strokeStyle=stroke; ctx.lineWidth=cell.st==='key'?lw*1.4:lw; ctx.stroke(); }
 }
@@ -1101,7 +1101,7 @@ $('#csvFile').onchange=async e=>{
   try{ S.csv=loadCsvKey(await f.text(), f.name); csvChanged(); }
   catch(err){ $('#csvName').textContent='อ่าน CSV ไม่ได้: '+(err.message||err); }
 };
-$('#guideBtn').onclick=()=>{ const g=$('#guide'); g.hidden=!g.hidden; $('#guideBtn').setAttribute('aria-expanded',String(!g.hidden)); $('#guideBtn').textContent=g.hidden?'📖 คู่มือการใช้':'✕ ปิดคู่มือ'; };
+$('#guideBtn').onclick=()=>{ const g=$('#guide'); g.hidden=!g.hidden; $('#guideBtn').setAttribute('aria-expanded',String(!g.hidden)); $('#guideBtn').lastElementChild.textContent=g.hidden?'คู่มือการใช้':'ปิดคู่มือ'; };
 $('#csvClear').onclick=()=>{ S.csv=null; csvChanged(); };
 $('#csvSample').onclick=downloadSampleCsv;
 $('#confirmKey').onclick=()=>{ setConfirmed(true); $('#s2').scrollIntoView({behavior:'smooth'}); };
@@ -1129,6 +1129,36 @@ $('#pOpt').onchange=e=>{ P.opt=e.target.value; if (S.key) renderKey(); };
 for (const id of ['#pDpi']) $(id).addEventListener('change',()=>{ if (S.keyFile) runKey(); });
 
 /* ---------- UI: ขั้นที่ 2 ---------- */
+// แก้คำตอบข้อที่ฝนไม่ครบ/หลายช่องเอง (col = ช่องที่ถูกเลือก, -1 = ไม่ตอบ) → คิดคะแนน/สถานะ/ภาพใหม่
+function applyFix(rec,q,col){
+  const K=S.key, g=K.graded.find(x=>x.q===q); if (!g) return;
+  if (col===null){ delete rec.fixes[q]; } else rec.fixes[q]=col;
+  const fx=rec.fixes[q], cells=rec.qCells[q]||[];
+  // ภาพ: คืนสถานะเดิมเมื่อยกเลิก; แก้แล้วแสดงตามที่เลือก
+  cells.forEach((c,i)=>{ c.st = fx===undefined ? (rec.cand[q]?.includes(i)?'bad':'blank') : (i===fx?(fx===g.col?'ok':'bad'):'blank'); });
+  if (fx===undefined || fx!==g.col) cells[g.col].st='key';
+  rec.given[q]= fx===undefined ? (rec.cand[q]?.length?-2:-1) : fx;
+  rec.hl.forEach(h=>{ if (h.q===q) h.off=fx!==undefined; });
+  rec.score=K.graded.filter(x=>rec.given[x.q]===x.col).length;
+  const open=a=>a.filter(n=>rec.fixes[n]===undefined);
+  rec.reasons=[...rec.baseReasons]; if (open(rec.miss).length) rec.reasons.push(`ฝนไม่ครบ: ข้อ ${rng(open(rec.miss))}`); if (open(rec.multi).length) rec.reasons.push(`ฝนหลายช่อง: ข้อ ${rng(open(rec.multi))}`);
+  rec.status=rec.reasons.length?'check':Object.keys(rec.fixes).length?'fixed':'ok';   // fixed = แก้ไขแล้ว (ยังแสดงในรายการใบที่เคยมีปัญหา)
+}
+// ข้อความสรุปการแก้ เช่น "ข้อ 8 (เดิม 69 : แก้แล้ว 70)" — เดิม = คะแนนจากระบบ
+const fixNote=r=>`ข้อ ${rng(Object.keys(r.fixes).map(Number))} (เดิม ${r.origScore} : แก้แล้ว ${r.score})`;
+function renderFix(rec){
+  const qs=[...(rec.miss||[]),...(rec.multi||[])].sort((a,b)=>a-b), K=S.key;
+  const box=$('#detFix'); if (!qs.length){ box.innerHTML=''; return; }
+  box.innerHTML=`<div class="alert ok" style="margin:6px 0"><b>แก้คำตอบข้อที่ต้องตรวจซ้ำ</b> (ดูภาพแล้วเลือกช่องที่นักศึกษาตั้งใจตอบ คะแนนและ CSV จะอัปเดตตาม)<div class="fixgrid">`+qs.map(q=>{
+    const g=K.graded.find(x=>x.q===q), n=g?g.b.cols.length:5, fx=rec.fixes[q], why=(rec.cand[q]||[]).length?`ฝนหลายช่อง (${rec.cand[q].map(optLabel).join(', ')})`:'ไม่ฝน';
+    return `<label>ข้อ ${q} <select data-q="${q}"><option value="">ยังไม่แก้ — ${why}</option><option value="-1"${fx===-1?' selected':''}>ไม่ตอบ (ไม่นับ)</option>${Array.from({length:n},(_,i)=>`<option value="${i}"${fx===i?' selected':''}>${esc(optLabel(i))}</option>`).join('')}</select></label>`;
+  }).join('')+`</div></div>`;
+}
+$('#detFix').onchange=e=>{
+  const q=+e.target.dataset.q; if (!q||S.sel<0) return; const rec=S.results[S.sel];
+  applyFix(rec,q,e.target.value===''?null:+e.target.value);
+  renderResults(); openDetail(S.sel);
+};
 function columns(){
   const K=S.key; return { other:K.others.filter(b=>b.use).map(b=>b.name), qs:K.graded.map(g=>g.q) };
 }
@@ -1139,11 +1169,11 @@ function renderResults(){
   $('#colPreview').innerHTML=['ลำดับหน้า PDF',...cols.other,'คะแนนรวม','คะแนนเต็ม ('+K.graded.length+')','สถานะ',`ข้อ ${cols.qs[0]??''} … ข้อ ${cols.qs[cols.qs.length-1]??''} (${cols.qs.length} คอลัมน์)`].map(x=>`<span class="chip">${esc(x)}</span>`).join('');
   $('#resHead').innerHTML='<tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
   $('#resBody').innerHTML=S.results.map((r,i)=>({r,i})).filter(({r})=>!only||r.status!=='ok').map(({r,i})=>{
-    const badge=r.status==='ok'?'<span class="badge ok">ปกติ</span>':`<span class="badge ${r.fail?'bad':'warn'}">ต้องตรวจซ้ำ</span> <span class="mut">${esc(r.reasons.join(' · '))}</span>`;
+    const badge=r.status==='ok'?'<span class="badge ok">ปกติ</span>':r.status==='fixed'?`<span class="badge ok" style="background:#fff3bf;color:#7a5b00">แก้ไขแล้ว</span> <span class="mut">${fixNote(r)}</span>`:`<span class="badge ${r.fail?'bad':'warn'}">ต้องตรวจซ้ำ</span> <span class="mut">${esc(r.reasons.join(' · '))}</span>`;
     return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${cols.other.map(n=>`<td>${esc(r.info?.[n]??r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
   }).join('');
-  const flagged=S.results.filter(r=>r.status!=='ok').length, okR=S.results.filter(r=>!r.fail);
-  $('#sumLine').textContent=`ตรวจแล้ว ${S.results.length} หน้า · ต้องตรวจซ้ำ ${flagged} ใบ`+(okR.length?` · คะแนนเฉลี่ย ${(okR.reduce((a,r)=>a+r.score,0)/okR.length).toFixed(1)}/${K.graded.length}`:'');
+  const flagged=S.results.filter(r=>r.status==='check').length, nFixed=S.results.filter(r=>r.status==='fixed').length, okR=S.results.filter(r=>!r.fail);
+  $('#sumLine').textContent=`ตรวจแล้ว ${S.results.length} หน้า · ต้องตรวจซ้ำ ${flagged} ใบ`+(nFixed?` · แก้ไขแล้ว ${nFixed} ใบ`:'')+(okR.length?` · คะแนนเฉลี่ย ${(okR.reduce((a,r)=>a+r.score,0)/okR.length).toFixed(1)}/${K.graded.length}`:'');
 }
 $('#resBody').onclick=e=>{ const tr=e.target.closest('tr[data-i]'); if (tr) openDetail(+tr.dataset.i); };
 $('#onlyFlag').onchange=renderResults;
@@ -1152,7 +1182,8 @@ async function openDetail(i){
   $('#detail').hidden=false; const hi=t=>`<span style="color:var(--brand)">${esc(t)}</span>`;   // สีเน้นเฉพาะคะแนนที่ได้ และค่าข้อมูล
   const extra=columns().other.map(n=>`${esc(n)}: ${hi(r.info?.[n]??r.raw?.[n]??'')}`).join(' · ');
   $('#detTitle').innerHTML=esc(`หน้า ${r.page}`)+(r.fail?'':` — ${hi(r.score)}/${S.key.graded.length}`)+(extra?` <span style="font-weight:400;font-size:16px">· ${extra}</span>`:'');
-  $('#detReasons').innerHTML=r.reasons.length?`<div class="alert warn">⚠ ${esc(r.reasons.join(' · '))}</div>`:'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
+  renderFix(r);
+  $('#detReasons').innerHTML=r.reasons.length?`<div class="alert warn">⚠ ${esc(r.reasons.join(' · '))}</div>`:r.status==='fixed'?`<div class="alert ok">แก้ไขแล้ว ${esc(fixNote(r))}</div>`:'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
   document.querySelectorAll('#resBody tr').forEach(t=>t.classList.toggle('sel',+t.dataset.i===i));
   await drawStudent(r); $('#detail').scrollIntoView({behavior:'smooth',block:'nearest'});
 }
@@ -1190,7 +1221,7 @@ $('#dlCsv').onclick=()=>{
       return g===-1?'-':g===-2?'*':optLabel(g);
     });
     lines.push([ q(r.page), ...cols.other.map(n=>txt(r.info?.[n]??r.raw?.[n]??'')), q(r.fail?'':r.score), q(K.graded.length),
-      q(r.status==='ok'?'ปกติ':'ต้องตรวจซ้ำ: '+r.reasons.join(' | ')), ...ans.map(q) ].join(','));
+      q(r.status==='ok'?'ปกติ':r.status==='fixed'?'แก้ไขแล้ว '+fixNote(r):'ต้องตรวจซ้ำ: '+r.reasons.join(' | ')), ...ans.map(q) ].join(','));
   }
   const url=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
   const a=document.createElement('a'); a.href=url; a.download='omr-results.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
