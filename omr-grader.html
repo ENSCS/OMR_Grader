@@ -81,7 +81,7 @@ tr.sel{background:var(--ok-bg)}
 <header>
   <h1>ตรวจข้อสอบ OMR</h1>
   <button class="btn sec" id="guideBtn" type="button" aria-expanded="false" aria-controls="guide"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 19a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6a9 9 0 0 1 9 0a9 9 0 0 1 9 0"/><path d="M3 6l0 13"/><path d="M12 6l0 13"/><path d="M21 6l0 13"/></svg> <span>คู่มือการใช้</span></button>
-  <p>ประมวลผลในเครื่องของคุณทั้งหมด ไฟล์สแกนไม่ถูกอัปโหลดไปไหน — ให้เฉลยสอนโปรแกรมว่าฟอร์มหน้าตาเป็นอย่างไร</p>
+  <p>ตั้งเฉลย (ฝนหรือ CSV) → ตรวจกระดาษคำตอบทั้งปึก → ได้คะแนนและ CSV · ทำงานในเครื่อง ไฟล์ไม่ถูกอัปโหลด</p>
 </header>
 
 <main>
@@ -89,27 +89,28 @@ tr.sel{background:var(--ok-bg)}
   <h2 style="margin-top:0">คู่มือการใช้</h2>
   <h3>เตรียมไฟล์</h3>
   <ol>
-    <li>สแกน PDF สี/grayscale ≥ 200 dpi, 1 หน้า = 1 คน, ฟอร์มชุดเดียวกันทั้งไฟล์ (ประมวลผลในเครื่อง ไม่อัปโหลด)</li>
+    <li>สแกน PDF สี/grayscale ≥ 200 dpi ฟอร์มเดียวกันทั้งไฟล์ (ประมวลผลในเครื่อง ไม่อัปโหลด)</li>
   </ol>
   <h3>ขั้นที่ 1 ตั้งเฉลย (เลือก 1 วิธี)</h3>
   <ol>
     <li><b>ฟอร์ม SCI:</b> กด "ใช้ฟอร์ม SCI มาตรฐาน" แล้วอัปโหลด CSV เฉลย</li>
-    <li><b>ฟอร์มอื่น:</b> เลือกไฟล์เฉลยที่ฝนแล้ว หรือกระดาษเปล่า + CSV เฉลย (ดาวน์โหลดตัวอย่างได้ · ข้อ, เฉลย 1–5 / ก–จ / A–E)</li>
+    <li><b>ฟอร์มอื่น:</b> เลือกไฟล์เฉลยที่ฝนแล้ว หรือกระดาษเปล่า + CSV เฉลย (มีไฟล์ตัวอย่างให้ดาวน์โหลด)</li>
     <li>ตรวจภาพ: เขียว = เฉลย, เทา = ไม่ฝน, แดง = หาช่องไม่เจอ · เฉลยผิดแก้ได้ในตาราง</li>
-    <li>บล็อกที่ไม่ใช้ <b>คลิกกรอบในภาพ</b> (หรือติ๊กออกในตาราง) จะเป็นสีเทา ไม่คิดคะแนน ไม่ออก CSV</li>
+    <li>บล็อกที่ไม่ใช้ <b>คลิกกรอบในภาพ</b> (หรือติ๊กออก) = สีเทา ไม่คิดคะแนน ไม่ออก CSV</li>
     <li>ตั้งชื่อบล็อกข้อมูล (หัวคอลัมน์ CSV) แล้วกด <b>ยืนยันเฉลย</b></li>
   </ol>
   <h3>ขั้นที่ 2 ตรวจกระดาษคำตอบ</h3>
   <ol>
-    <li>เลือก PDF นักศึกษา (หลายไฟล์พร้อมกันได้) <b>เลือกเพิ่มทีหลังได้</b> ผลจะนับต่อจากเดิม รวมในตาราง CSV และกราฟ ใช้เฉลยเดียวกัน (เช่น หลายตอนเรียน) · "ล้างผลทั้งหมด" เพื่อเริ่มใหม่ · เปลี่ยนเฉลยแล้วผลที่ตรวจไว้จะถูกล้าง · คลิกแถวเพื่อดูภาพ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = เฉลย, ม่วง = ข้อมูลผู้สอบ</li>
-    <li>ใบ "ต้องตรวจซ้ำ" มีแถบเหลืองชี้ข้อ/หลักที่ฝนไม่ครบหรือหลายช่อง แก้ได้ในกล่อง <b>แก้คำตอบ</b> คะแนนและ CSV อัปเดตตาม สถานะเป็น "แก้ไขแล้ว (เดิม … : แก้แล้ว …)" · ผลแก้อยู่ในหน้าเว็บเท่านั้น แก้ให้ครบก่อนดาวน์โหลด</li>
+    <li>เลือก PDF นักศึกษา (หลายไฟล์ได้) แล้ว <b>เลือกเพิ่มทีหลังได้</b> ผลนับต่อจากเดิม รวมในตาราง CSV และกราฟ ใช้เฉลยเดียวกัน (เช่น หลายตอนเรียน) · เริ่มใหม่กด "ล้างผลทั้งหมด"</li>
+    <li>คลิกแถวดูภาพ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = เฉลย, ม่วง = ข้อมูลผู้สอบ · หัวภาพบอกคะแนนและรหัส</li>
+    <li>ใบ "ต้องตรวจซ้ำ" มีแถบเหลืองชี้ข้อที่ฝนไม่ครบ/หลายช่อง แก้ในกล่อง <b>แก้คำตอบ</b> ได้ สถานะเป็น "แก้ไขแล้ว (เดิม … : แก้แล้ว …)"</li>
+    <li>ปุ่ม <b>กราฟคะแนน</b> = Histogram แท่งละ 1 คะแนน พร้อมค่าเฉลี่ย/มัธยฐาน/สูง-ต่ำสุด</li>
     <li>กด <b>ดาวน์โหลด CSV</b> (เปิดใน Excel ภาษาไทยไม่เพี้ยน)</li>
-    <li>ปุ่ม <b>กราฟคะแนน</b> คลี่การ์ด Histogram (แกนนอน = คะแนน เริ่ม 0 ทางซ้าย) พร้อมค่าเฉลี่ย/มัธยฐาน/สูง-ต่ำสุด ใช้คะแนนหลังแก้ไขแล้ว</li>
   </ol>
-  <h3>ถ้าผลไม่ถูก</h3>
+  <h3>ควรรู้</h3>
   <ol>
-    <li>ปรับ "ตั้งค่าขั้นสูง" (ความไวต่อขอบวงกลม / เกณฑ์ความเข้มของการฝน) หรือสแกนใหม่ให้ชัดขึ้น</li>
-    <li>ข้อสอบ 2 ชุด (① ②) ระบบไม่อ่านช่องชุด ให้แยกไฟล์และเฉลย</li>
+    <li>เปลี่ยนเฉลยหรือบล็อกในขั้นที่ 1 = ผลที่ตรวจไว้และที่แก้เองถูกล้าง · ผลอยู่ในหน้าเว็บเท่านั้น โหลดหน้าใหม่แล้วหาย ดาวน์โหลด CSV ก่อน</li>
+    <li>วงกลมหาย/เกิน: ปรับ "ตั้งค่าขั้นสูง" · ข้อสอบ 2 ชุด (① ②) ให้แยกไฟล์และเฉลย</li>
   </ol>
 </section>
 <!-- ===== ขั้นที่ 1 ===== -->
@@ -119,8 +120,8 @@ tr.sel{background:var(--ok-bg)}
     <label class="btn">เลือกไฟล์เฉลย (PDF / ภาพ)
       <input type="file" id="keyFile" accept=".pdf,image/*" hidden>
     </label>
-    <button class="btn sec" id="sciForm" type="button" title="ใช้ฟอร์มกระดาษคำตอบ SCI เปล่าที่แนบมา (ไม่ต้องสแกนเฉลย) แล้วอัปโหลด CSV เฉลยต่อ">ใช้ฟอร์ม SCI มาตรฐาน (กระดาษเปล่า)</button>
-    <span class="mut" id="keyName">ยังไม่ได้เลือกไฟล์ — ใช้หน้าแรกของไฟล์เป็นเฉลย</span>
+    <button class="btn sec" id="sciForm" type="button" title="ฟอร์ม SCI เปล่า ไม่ต้องสแกนเฉลย แล้วอัปโหลด CSV เฉลยต่อ">ใช้ฟอร์ม SCI มาตรฐาน (กระดาษเปล่า)</button>
+    <span class="mut" id="keyName">ใช้หน้าแรกของไฟล์</span>
   </div>
   <div class="row" style="margin-top:8px">
     <label class="btn sec">เลือกไฟล์ CSV เฉลย (ไม่ต้องฝน)
@@ -128,7 +129,7 @@ tr.sel{background:var(--ok-bg)}
     </label>
     <button class="btn sec" id="csvSample" type="button">ดาวน์โหลดไฟล์ CSV ตัวอย่าง</button>
     <button class="btn sec" id="csvClear" type="button" hidden>เอา CSV ออก</button>
-    <span class="mut" id="csvName">ถ้ามี CSV เฉลย ใช้ร่วมกับกระดาษเปล่า (ไม่ฝน) ได้ โปรแกรมใช้ภาพแค่บอกโครงสร้างฟอร์ม · คอลัมน์: ข้อ, เฉลย (1–5 / ก–จ / A–E, ว่าง = ไม่นับ)</span>
+    <span class="mut" id="csvName">ใช้กับกระดาษเปล่าได้ · คอลัมน์: ข้อ, เฉลย (1–5 / ก–จ / A–E, ว่าง = ไม่นับ)</span>
   </div>
   <details>
     <summary>ตั้งค่าขั้นสูง</summary>
@@ -149,10 +150,10 @@ tr.sel{background:var(--ok-bg)}
       </label>
     </div>
     <div id="prevBox">
-      <h3>ตัวอย่างผลตามค่าที่ปรับ <span class="mut">(อัปเดตทันทีที่เลื่อน)</span></h3>
+      <h3>ตัวอย่าง <span class="mut">(อัปเดตทันที)</span></h3>
       <canvas id="prevCv" style="max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></canvas>
       <div class="mut" id="prevCap"></div>
-      <div class="mut"><b>ซ้าย</b> = ภาพจริง วงเขียว = ช่องที่อ่านว่าฝน (ปรับด้วย "เกณฑ์ความเข้ม") · <b>ขวา</b> = สิ่งที่โปรแกรมมองเห็นเป็นเส้น วงเขียว = วงกลมที่หาเจอ (ปรับด้วย "ความไวต่อขอบ")</div>
+      <div class="mut"><b>ซ้าย</b> วงเขียว = ช่องที่อ่านว่าฝน · <b>ขวา</b> วงเขียว = วงกลมที่หาเจอ</div>
     </div>
     <div class="row" style="margin-top:10px"><button class="btn sec" id="reKey" disabled>วิเคราะห์เฉลยใหม่</button></div>
   </details>
@@ -170,15 +171,15 @@ tr.sel{background:var(--ok-bg)}
       <span style="--b:#888">ช่องว่าง</span>
       <span style="--b:#2563eb">กรอบ = บล็อกคำตอบ</span>
       <span style="--b:#9333ea">กรอบ = บล็อกข้อมูลผู้สอบ</span>
-      <span style="--b:#ea580c">กรอบ = ช่องที่เฉลยไม่ฝน (ส่งออกค่าดิบ)</span>
-      <span style="--b:#9ca3af">สีเทา = ไม่เลือก (คลิกกรอบม่วง/ส้มในภาพเพื่อสลับ)</span>
+      <span style="--b:#ea580c">กรอบ = ช่องดิบ</span>
+      <span style="--b:#9ca3af">สีเทา = ไม่เลือก</span>
     </div>
-    <div class="alert ok" style="margin:8px 0">เคล็ดลับ: <b>คลิกที่กรอบสีม่วง/ส้มในภาพ</b> เพื่อ <b>ไม่เลือก</b> บล็อกนั้น (ไม่ต้องการส่งออกใน CSV เช่น วงลายมือที่ถูกนับเป็นช่อง) จะเปลี่ยนเป็นสีเทา · คลิกอีกครั้งเพื่อเลือกกลับ</div>
+    <div class="alert ok" style="margin:8px 0"><b>คลิกกรอบในภาพ</b> = ไม่เลือกบล็อกนั้น (สีเทา ไม่ออก CSV) · คลิกอีกครั้งเพื่อเลือกกลับ</div>
     <div class="viewer" id="keyViewer"><canvas id="keyCanvas"></canvas></div>
 
     <div class="grid2 split">
       <div>
-        <h3>บล็อกที่โปรแกรมพบ <span class="mut">(แก้ชื่อได้ ชื่อจะเป็นหัวคอลัมน์ใน CSV · ติ๊กออก = ไม่เลือก)</span></h3>
+        <h3>บล็อกที่โปรแกรมพบ <span class="mut">(ชื่อ = หัวคอลัมน์ CSV · ติ๊กออก = ไม่เลือก)</span></h3>
         <div class="tblwrap"><table><thead><tr><th>#</th><th>ประเภท</th><th>ขนาด</th><th>ใส่ใน CSV</th><th>ชื่อคอลัมน์</th></tr></thead><tbody id="blkBody"></tbody></table></div>
       </div>
       <div>
@@ -188,7 +189,7 @@ tr.sel{background:var(--ok-bg)}
     </div>
     <div class="row" style="margin-top:14px">
       <button class="btn" id="confirmKey">ยืนยันเฉลย</button>
-      <span class="mut" id="confirmNote">ตรวจเทียบกับกระดาษจริงก่อนกดยืนยัน</span>
+      <span class="mut" id="confirmNote">ตรวจเทียบกระดาษจริงก่อนยืนยัน</span>
     </div>
   </div>
 </section>
@@ -201,9 +202,9 @@ tr.sel{background:var(--ok-bg)}
       <input type="file" id="stuFile" accept=".pdf,image/*" multiple hidden>
     </label>
     <button class="btn sec" id="stuClear" type="button" hidden>ล้างผลทั้งหมด</button>
-    <span class="mut" id="stuName">1 หน้า = 1 คน</span>
+    <span class="mut" id="stuName"></span>
   </div>
-  <div class="mut" style="margin-top:4px">เลือกได้หลายไฟล์พร้อมกัน และ <b>เลือกเพิ่มทีหลังได้</b> — ผลจะนับต่อจากเดิม รวมในตารางและกราฟ ใช้เฉลยเดียวกัน (เช่น หลายตอนเรียน) · ต้องการเริ่มใหม่กด "ล้างผลทั้งหมด"</div>
+  <div class="mut" style="margin-top:4px">เลือกได้หลายไฟล์ และ <b>เลือกเพิ่มทีหลังได้</b> ผลนับต่อจากเดิม (รวมในตารางและกราฟ ใช้เฉลยเดียวกัน)</div>
   <div class="bar" id="stuBar" hidden><i></i></div>
   <div class="mut" id="stuProg"></div>
 
@@ -589,7 +590,7 @@ function analyzeKey(an){
     if (b.type==='info' && b.missing.length) warns.push(`${b.name}: เฉลยไม่ได้ฝนคอลัมน์ที่ ${b.missing.map(c=>c+1).join(', ')} — ตรวจให้แน่ใจว่าอ่านครบ`);
   });
   if (ungraded.length && graded.length) warns.push(`ข้อที่เฉลยไม่ฝน (ไม่นำมาคิดคะแนน): ${rng(ungraded)}`);
-  if (!graded.length) warns.push('ยังไม่มีเฉลย (ไม่พบรอยฝนในกระดาษ) — อัปโหลดไฟล์ CSV เฉลยต่อได้เลย ถ้าฝนเฉลยไว้แล้วแต่ไม่ขึ้น ลองปรับ "เกณฑ์ความเข้มของการฝน"');
+  if (!graded.length) warns.push('ยังไม่มีเฉลย — อัปโหลด CSV เฉลย (ถ้าฝนแล้วไม่ขึ้น ลดเกณฑ์ความเข้ม)');
   if (blocks.some(b=>b.cells.flat().some(c=>!c.det))) warns.push('บางช่องหาวงกลมไม่เจอ (ใช้ตำแหน่งตามกริดแทน) — ดูภาพ debug');
   return { blocks, answers, others, infos, raws, graded, ungraded, nq:q-1, D, circles:an.det.circles, baseline, warns };
 }
@@ -955,8 +956,8 @@ function renderKey(){
   const K=S.key; $('#keyOut').hidden=false;
   const parts=[`พบวงกลม <b>${K.circles.length}</b> ช่อง ขนาดประมาณ ${K.D.toFixed(0)} px แบ่งเป็น <b>${K.blocks.length}</b> บล็อก`,
     `บล็อกคำตอบ ${K.answers.length} · บล็อกข้อมูลผู้สอบ ${K.infos.length} · ช่องดิบ ${K.raws.length}`,
-    `<b>คะแนนเต็ม = ${K.graded.length} ข้อ</b> (อ่านได้จากเฉลย จากทั้งหมด ${K.nq} ข้อในฟอร์ม)`,
-    S.keyAn.strip.found ? `หมุนภาพอัตโนมัติ ${S.keyAn.quarter}° ตามแถบสี่เหลี่ยมดำ` : '',
+    `<b>คะแนนเต็ม = ${K.graded.length} ข้อ</b> (ฟอร์มมี ${K.nq} ข้อ)`,
+    S.keyAn.strip.found ? `หมุนภาพอัตโนมัติ ${S.keyAn.quarter}°` : '',
     K.csvInfo||''].filter(Boolean);
   $('#keyMsg').innerHTML=`<div class="alert ok">${parts.join('<br>')}</div>`+K.warns.map(w=>/^(ยังไม่มีเฉลย|CSV ไม่มีเฉลย)/.test(w)?`<div class="alert ok">ℹ ${esc(w)}</div>`:`<div class="alert warn">⚠ ${esc(w)}</div>`).join('');
   const typeName={answer:'คำตอบ',info:'ข้อมูลผู้สอบ',raw:'ช่องดิบ (เฉลยไม่ฝน)'};
@@ -975,7 +976,7 @@ function renderKey(){
     }
   };
   const byQ=new Map(K.graded.map(g=>[g.q,g.col])), nOpt=Math.max(...K.answers.map(b=>b.cols.length));
-  $('#ansCount').textContent=`(${K.graded.length} ข้อ · แก้ไขได้ ช่องสีเหลืองคือข้อที่แก้เอง)`;
+  $('#ansCount').textContent=`(${K.graded.length} ข้อ · แก้ได้ สีเหลือง = แก้เอง)`;
   $('#ansGrid').innerHTML=Array.from({length:K.nq},(_,i)=>i+1).map(q=>{
     const has=byQ.has(q), cur=has?byQ.get(q):-1;
     return `<div class="${has?'':'none'}${K.edits&&K.edits.has(q)?' edit':''}"><span>${q}</span><select data-q="${q}"><option value="-1"${cur<0?' selected':''}>–</option>${Array.from({length:nOpt},(_,i)=>`<option value="${i}"${cur===i?' selected':''}>${esc(optLabel(i))}</option>`).join('')}</select></div>`;
@@ -1071,7 +1072,7 @@ function setConfirmed(v){
   updateStuName();
   S.confirmed=v; $('#s2').classList.toggle('locked',!v);
   $('#confirmKey').textContent=v?'✓ ยืนยันแล้ว':'ยืนยันเฉลย'; $('#confirmKey').disabled=v;
-  $('#confirmNote').textContent=v?'ไปขั้นที่ 2 ได้เลย — ถ้าแก้ไขการตั้งค่า ต้องวิเคราะห์เฉลยและยืนยันใหม่':'ตรวจเทียบกับกระดาษจริงก่อนกดยืนยัน';
+  $('#confirmNote').textContent=v?'ไปขั้นที่ 2 ได้เลย (แก้ตั้งค่า = ต้องยืนยันใหม่)':'ตรวจเทียบกระดาษจริงก่อนยืนยัน';
 }
 async function runKey(){
   const msg=$('#keyMsg'); $('#keyOut').hidden=false; showAlert(msg,'ok','กำลังวิเคราะห์เฉลย…'); await tick();
@@ -1080,7 +1081,7 @@ async function runKey(){
     S.keyAn=analyze(S.keyRaw,true); await tick();
     if (S.keyAn.det.circles.length<20){
       S.key=null; setConfirmed(false); $('#keyOut').hidden=false;
-      showAlert(msg,'bad',`พบวงกลมเพียง ${S.keyAn.det.circles.length} ช่อง — ลองเพิ่ม "ความไวต่อขอบวงกลม" ในตั้งค่าขั้นสูง หรือสแกนที่ความละเอียด ≥200 dpi`);
+      showAlert(msg,'bad',`พบวงกลมเพียง ${S.keyAn.det.circles.length} ช่อง — ลองเพิ่ม "ความไวต่อขอบวงกลม" (ตั้งค่าขั้นสูง) หรือสแกน ≥200 dpi`);
       const cv=$('#keyCanvas'); cv.width=S.keyAn.canvas.width; cv.height=S.keyAn.canvas.height; cv.getContext('2d').drawImage(S.keyAn.canvas,0,0); return;
     }
     S.key=buildKey(); renderKey();
@@ -1103,7 +1104,7 @@ $('#sciForm').onclick=async()=>{
 $('#reKey').onclick=()=>{ S.keyRaw=null; runKey(); };
 function csvChanged(){
   $('#csvClear').hidden=!S.csv;
-  $('#csvName').textContent=S.csv?`CSV: ${S.csv.name} (${S.csv.map.size} ข้อ)${S.keyAn?'':' — จะใช้เมื่อเลือกไฟล์เฉลย'}`:'ถ้ามี CSV เฉลย ใช้ร่วมกับกระดาษเปล่า (ไม่ฝน) ได้ โปรแกรมใช้ภาพแค่บอกโครงสร้างฟอร์ม · คอลัมน์: ข้อ, เฉลย (1–5 / ก–จ / A–E, ว่าง = ไม่นับ)';
+  $('#csvName').textContent=S.csv?`CSV: ${S.csv.name} (${S.csv.map.size} ข้อ)${S.keyAn?'':' — จะใช้เมื่อเลือกไฟล์เฉลย'}`:'ใช้กับกระดาษเปล่าได้ · คอลัมน์: ข้อ, เฉลย (1–5 / ก–จ / A–E, ว่าง = ไม่นับ)';
   if (S.keyAn && S.keyAn.det.circles.length>=20){ S.key=buildKey(); S.results=[]; $('#stuOut').hidden=true; renderKey(); }
 }
 $('#csvFile').onchange=async e=>{
@@ -1159,7 +1160,7 @@ const fixNote=r=>`ข้อ ${rng(Object.keys(r.fixes).map(Number))} (เดิ�
 function renderFix(rec){
   const qs=[...(rec.miss||[]),...(rec.multi||[])].sort((a,b)=>a-b), K=S.key;
   const box=$('#detFix'); if (!qs.length){ box.innerHTML=''; return; }
-  box.innerHTML=`<div class="alert ok" style="margin:6px 0"><b>แก้คำตอบข้อที่ต้องตรวจซ้ำ</b> (ดูภาพแล้วเลือกช่องที่นักศึกษาตั้งใจตอบ คะแนนและ CSV จะอัปเดตตาม)<div class="fixgrid">`+qs.map(q=>{
+  box.innerHTML=`<div class="alert ok" style="margin:6px 0"><b>แก้คำตอบข้อที่ต้องตรวจซ้ำ</b> (เลือกช่องที่ตั้งใจตอบ)<div class="fixgrid">`+qs.map(q=>{
     const g=K.graded.find(x=>x.q===q), n=g?g.b.cols.length:5, fx=rec.fixes[q], why=(rec.cand[q]||[]).length?`ฝนหลายช่อง (${rec.cand[q].map(optLabel).join(', ')})`:'ไม่ฝน';
     return `<label>ข้อ ${q} <select data-q="${q}"><option value="">ยังไม่แก้ — ${why}</option><option value="-1"${fx===-1?' selected':''}>ไม่ตอบ (ไม่นับ)</option>${Array.from({length:n},(_,i)=>`<option value="${i}"${fx===i?' selected':''}>${esc(optLabel(i))}</option>`).join('')}</select></label>`;
   }).join('')+`</div></div>`;
@@ -1179,7 +1180,8 @@ function renderChart(){
   if (!sc.length || !full){ $('#chartStat').textContent='ยังไม่มีคะแนน'; $('#chartBox').innerHTML=''; return; }
   const n=sc.length, mean=sc.reduce((a,b)=>a+b,0)/n, sorted=[...sc].sort((a,b)=>a-b), med=n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
   const sd=Math.sqrt(sc.reduce((a,b)=>a+(b-mean)**2,0)/n);
-  $('#chartStat').textContent=`${n} ใบ · เฉลี่ย ${mean.toFixed(1)} · มัธยฐาน ${med} · ต่ำสุด ${sorted[0]} · สูงสุด ${sorted[n-1]} · S.D. ${sd.toFixed(1)} · คะแนนเต็ม ${full}`;
+  const hi=v=>`<b style="color:var(--brand)">${v}</b>`;   // ค่าเป็นสีเน้น
+  $('#chartStat').innerHTML=`${hi(n)} ใบ · เฉลี่ย ${hi(mean.toFixed(1))} · มัธยฐาน ${hi(med)} · ต่ำสุด ${hi(sorted[0])} · สูงสุด ${hi(sorted[n-1])} · S.D. ${hi(sd.toFixed(1))} · คะแนนเต็ม ${hi(full)}`;
   const w=1, nb=full+1, cnt=Array(nb).fill(0);   // แท่งละ 1 คะแนนเสมอ
   sc.forEach(v=>cnt[Math.min(nb-1,Math.floor(v/w))]++);
   const mx=Math.max(...cnt), top=Math.max(1,mx), step=top<=8?1:top<=20?2:top<=50?5:10, yMax=Math.ceil(top/step)*step;
@@ -1248,7 +1250,7 @@ $('#stuFile').onchange=async e=>{
         if (p%3===0||p===n) renderResults();
       }
       bar.firstElementChild.style.width='100%';
-      prog.textContent=`เสร็จแล้ว ${f.name} ${n} หน้า (ใช้เวลา ${((performance.now()-t0)/1000).toFixed(0)} วินาที) · รวมทั้งหมด ${S.results.length} ใบ — เลือกไฟล์เพิ่มได้`;
+      prog.textContent=`เสร็จ ${f.name} ${n} หน้า (${((performance.now()-t0)/1000).toFixed(0)} วินาที) · รวม ${S.results.length} ใบ`;
     }
     renderResults();
   }catch(err){ console.error(err); prog.innerHTML=`<div class="alert bad">${esc(err.message)}</div>`; }
@@ -1256,7 +1258,7 @@ $('#stuFile').onchange=async e=>{
 $('#stuClear').onclick=()=>{ if (!S.results.length || !confirm(`ล้างผลที่ตรวจแล้ว ${S.results.length} ใบ?`)) return; S.results=[]; S.sel=-1; $('#detail').hidden=true; $('#stuOut').hidden=true; $('#stuProg').textContent=''; $('#stuBar').hidden=true; updateStuName(); };
 function updateStuName(){
   const fs=[...new Set(S.results.map(r=>r.file))];
-  $('#stuName').textContent=fs.length?(fs.length>2?`${fs.length} ไฟล์`:fs.join(', '))+` · ${S.results.length} ใบ`:'1 หน้า = 1 คน';
+  $('#stuName').textContent=fs.length?(fs.length>2?`${fs.length} ไฟล์`:fs.join(', '))+` · ${S.results.length} ใบ`:'';
   $('#stuClear').hidden=!fs.length;
 }
 
