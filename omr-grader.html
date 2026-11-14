@@ -104,6 +104,7 @@ tr.sel{background:var(--ok-bg)}
     <li>เลือก PDF นักศึกษา คลิกแถวเพื่อดูภาพ: เขียว = ถูก, แดง = ผิด, น้ำเงิน = เฉลย, ม่วง = ข้อมูลผู้สอบ</li>
     <li>ใบ "ต้องตรวจซ้ำ" มีแถบเหลืองชี้ข้อ/หลักที่ฝนไม่ครบหรือหลายช่อง แก้ได้ในกล่อง <b>แก้คำตอบ</b> คะแนนและ CSV อัปเดตตาม สถานะเป็น "แก้ไขแล้ว (เดิม … : แก้แล้ว …)" · ผลแก้อยู่ในหน้าเว็บเท่านั้น แก้ให้ครบก่อนดาวน์โหลด</li>
     <li>กด <b>ดาวน์โหลด CSV</b> (เปิดใน Excel ภาษาไทยไม่เพี้ยน)</li>
+    <li>ปุ่ม <b>กราฟคะแนน</b> คลี่การ์ด Histogram (แกนนอน = คะแนน เริ่ม 0 ทางซ้าย) พร้อมค่าเฉลี่ย/มัธยฐาน/สูง-ต่ำสุด ใช้คะแนนหลังแก้ไขแล้ว</li>
   </ol>
   <h3>ถ้าผลไม่ถูก</h3>
   <ol>
@@ -214,6 +215,12 @@ tr.sel{background:var(--ok-bg)}
       <label class="pill mut"><input type="checkbox" id="csvText" checked> ป้องกัน Excel ตัดเลข 0 นำหน้า (ข้อมูลผู้สอบ)</label>
       <label class="pill mut"><input type="checkbox" id="onlyFlag"> แสดงเฉพาะใบที่ต้องตรวจซ้ำ</label>
       <button class="btn" id="dlCsv">ดาวน์โหลด CSV</button>
+      <button class="btn sec" id="chartBtn" type="button" aria-expanded="false" aria-controls="chartCard" style="display:inline-flex;align-items:center;gap:6px"><svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3v18h18"/><path d="M7 16v-5"/><path d="M11 16V8"/><path d="M15 16v-3"/><path d="M19 16V6"/></svg><span>กราฟคะแนน</span></button>
+    </div>
+    <div class="card" id="chartCard" hidden style="margin-top:10px">
+      <h3 style="margin:0 0 4px">กราฟคะแนน (Histogram)</h3>
+      <div class="mut" id="chartStat" style="margin-bottom:6px"></div>
+      <div id="chartBox" style="overflow-x:auto"></div>
     </div>
     <div id="sumLine" class="mut" style="margin-top:8px"></div>
     <div class="tblwrap" style="margin-top:8px"><table><thead id="resHead"></thead><tbody id="resBody"></tbody></table></div>
@@ -1162,6 +1169,31 @@ $('#detFix').onchange=e=>{
 function columns(){
   const K=S.key; return { other:K.others.filter(b=>b.use).map(b=>b.name), qs:K.graded.map(g=>g.q) };
 }
+// กราฟ Histogram คะแนน: แกนนอน = คะแนน (0 ซ้ายสุด ถึงคะแนนเต็ม) แกนตั้ง = จำนวนคน (ใช้คะแนนหลังแก้ไข ไม่รวมใบที่ตรวจไม่ได้)
+function renderChart(){
+  const card=$('#chartCard'); if (card.hidden || !S.key) return;
+  const full=S.key.graded.length, sc=S.results.filter(r=>!r.fail).map(r=>r.score);
+  if (!sc.length || !full){ $('#chartStat').textContent='ยังไม่มีคะแนน'; $('#chartBox').innerHTML=''; return; }
+  const n=sc.length, mean=sc.reduce((a,b)=>a+b,0)/n, sorted=[...sc].sort((a,b)=>a-b), med=n%2?sorted[(n-1)/2]:(sorted[n/2-1]+sorted[n/2])/2;
+  const sd=Math.sqrt(sc.reduce((a,b)=>a+(b-mean)**2,0)/n);
+  $('#chartStat').textContent=`${n} ใบ · เฉลี่ย ${mean.toFixed(1)} · มัธยฐาน ${med} · ต่ำสุด ${sorted[0]} · สูงสุด ${sorted[n-1]} · S.D. ${sd.toFixed(1)} · คะแนนเต็ม ${full}`;
+  const w=Math.max(1,Math.ceil((full+1)/40)), nb=Math.floor(full/w)+1, cnt=Array(nb).fill(0);   // แต่ละแท่ง = w คะแนน (ไม่เกิน ~40 แท่ง)
+  sc.forEach(v=>cnt[Math.min(nb-1,Math.floor(v/w))]++);
+  const mx=Math.max(...cnt), top=Math.max(1,mx), step=top<=8?1:top<=20?2:top<=50?5:10, yMax=Math.ceil(top/step)*step;
+  const W=Math.max(560,nb*22+80), H=260, L=44, B=40, T=14, R=14, pw=W-L-R, ph=H-T-B, bw=pw/nb;
+  let g='';
+  for (let y=0;y<=yMax;y+=step){ const yy=T+ph-ph*y/yMax; g+=`<line x1="${L}" x2="${W-R}" y1="${yy}" y2="${yy}" stroke="currentColor" opacity=".15"/><text x="${L-6}" y="${yy+4}" text-anchor="end" font-size="12" fill="currentColor">${y}</text>`; }
+  cnt.forEach((c,i)=>{
+    const x=L+i*bw, h=ph*c/yMax, lo=i*w, hi=Math.min(full,lo+w-1), lab=w===1?lo:`${lo}–${hi}`;
+    if (c) g+=`<rect x="${x+1}" y="${T+ph-h}" width="${Math.max(1,bw-2)}" height="${h}" fill="var(--brand)" rx="2"><title>${lab} คะแนน: ${c} คน</title></rect><text x="${x+bw/2}" y="${T+ph-h-4}" text-anchor="middle" font-size="12" fill="currentColor">${c}</text>`;
+    if (nb<=24 || i%Math.ceil(nb/24)===0) g+=`<text x="${x+bw/2}" y="${H-B+16}" text-anchor="middle" font-size="12" fill="currentColor">${w===1?lo:lo}</text>`;
+  });
+  g+=`<line x1="${L}" x2="${W-R}" y1="${T+ph}" y2="${T+ph}" stroke="currentColor" opacity=".5"/><text x="${L+pw/2}" y="${H-6}" text-anchor="middle" font-size="13" fill="currentColor">คะแนน${w>1?` (แท่งละ ${w} คะแนน)`:''}</text><text transform="translate(12 ${T+ph/2}) rotate(-90)" text-anchor="middle" font-size="13" fill="currentColor">จำนวนคน</text>`;
+  $('#chartBox').innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="Histogram คะแนน" style="color:var(--ink)">${g}</svg>`;
+}
+$('#chartBtn').onclick=()=>{
+  const c=$('#chartCard'); c.hidden=!c.hidden; $('#chartBtn').setAttribute('aria-expanded',String(!c.hidden)); renderChart();
+};
 function renderResults(){
   if (!S.key || !S.results.length && $('#stuOut').hidden) return;
   const K=S.key, cols=columns(), only=$('#onlyFlag').checked;
@@ -1173,6 +1205,7 @@ function renderResults(){
     return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${cols.other.map(n=>`<td>${esc(r.info?.[n]??r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
   }).join('');
   const flagged=S.results.filter(r=>r.status==='check').length, nFixed=S.results.filter(r=>r.status==='fixed').length, okR=S.results.filter(r=>!r.fail);
+  renderChart();
   $('#sumLine').textContent=`ตรวจแล้ว ${S.results.length} หน้า · ต้องตรวจซ้ำ ${flagged} ใบ`+(nFixed?` · แก้ไขแล้ว ${nFixed} ใบ`:'')+(okR.length?` · คะแนนเฉลี่ย ${(okR.reduce((a,r)=>a+r.score,0)/okR.length).toFixed(1)}/${K.graded.length}`:'');
 }
 $('#resBody').onclick=e=>{ const tr=e.target.closest('tr[data-i]'); if (tr) openDetail(+tr.dataset.i); };
