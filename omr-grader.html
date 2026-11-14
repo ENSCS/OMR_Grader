@@ -561,7 +561,7 @@ function analyzeKey(an){
       b.type='info'; b.use=true; b.idRow=null; b.missing=[]; b.cols.forEach((_,c)=>{ if (!raw.some(r=>r[c])) b.missing.push(c); });
     } else b.type='answer';
   }
-  const anyMarks=blocks.some(b=>b.type!=='blank');
+  const anyMarks=blocks.some(b=>b.type!=='blank' && b.rows.length>=5);   // ไม่นับบล็อกเล็กๆ (เช่น วงที่หลงมาจากตัวหนังสือ) ที่ทำให้กระดาษเปล่าถูกมองว่ามีรอยฝน
   for (const b of blocks) if (b.type==='blank'){
     if (!anyMarks)    // กระดาษเปล่าทั้งแผ่น (ใช้คู่กับ CSV เฉลย): 10 แถว = ช่องรหัส, ตั้งแต่ 5 แถวขึ้นไป = บล็อกคำตอบ, น้อยกว่านั้น = ช่องดิบ
       b.type = b.rows.length===10 && b.cols.length>=2 ? 'info' : b.rows.length>=5 ? 'answer' : 'raw';
