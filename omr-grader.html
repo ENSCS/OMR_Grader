@@ -1,0 +1,1193 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ตรวจข้อสอบ OMR</title>
+<style>
+:root{
+  /* พาเลตต์จากดีไซน์ SAP: น้ำเงินเป็นสีเดียวที่ "ทำงาน", พื้นเป็นแถบเรียบ */
+  --bg:#f5f6f7;--card:#fff;--ink:#223548;--mut:#475e75;--line:rgba(71,94,117,.25);
+  --brand:#0057d2;--brand-d:#0040b0;--warn:#8a4b00;--warn-bg:#fff4e0;--bad:#b00020;--bad-bg:#fde8ea;--ok-bg:#ebf8ff;--blue:#0057d2;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.55 -apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",system-ui,sans-serif}
+h1,h2,h3{color:#000}
+input{accent-color:var(--brand)}
+header{padding:18px 20px 6px;max-width:1200px;margin:auto;position:relative}
+#guideBtn{position:absolute;right:20px;top:20px;padding:8px 16px}
+#guide{margin-bottom:16px}
+#guide ol{margin:6px 0 0;padding-left:22px}
+#guide li{margin:5px 0}
+#guide h3{margin:12px 0 2px;font-size:16px}
+@media(max-width:600px){#guideBtn{position:static;margin-top:8px}}
+header h1{margin:0;font-size:30px}
+header p{margin:2px 0 0;color:var(--mut);font-size:16px}
+main{max-width:1200px;margin:auto;padding:8px 20px 60px;display:grid;gap:16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px}
+.card.locked{opacity:.45;pointer-events:none}
+h2{margin:0 0 14px;font-size:22px;display:flex;align-items:center;gap:10px}
+h2 .num{background:var(--brand);color:#fff;width:32px;height:32px;border-radius:50%;display:inline-grid;place-items:center;font-size:17px}
+h3{font-size:17px;margin:16px 0 6px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.btn{display:inline-block;background:var(--brand);color:#fff;border:0;border-radius:8px;padding:10px 20px;font:inherit;cursor:pointer}
+.btn:hover{background:var(--brand-d)}
+.btn.sec{background:transparent;color:var(--ink);border:1px solid var(--line)}
+.btn.sec:hover{background:var(--bg)}
+.btn[disabled]{opacity:.45;pointer-events:none}
+.mut{color:var(--mut);font-size:15px}
+details{margin-top:10px}
+summary{cursor:pointer;color:var(--mut);font-size:15px}
+.settings{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin-top:10px}
+.settings label{display:grid;gap:4px;font-size:15px}
+select,input[type=text]{font:inherit;padding:6px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--ink)}
+.viewer{border:1px solid var(--line);border-radius:8px;overflow:auto;max-height:78vh;background:#888;margin-top:10px}
+.viewer canvas{display:block;width:var(--zoom,100%)}
+.grid2{display:grid;grid-template-columns:minmax(0,1fr);gap:16px}
+@media(min-width:900px){.grid2.split{grid-template-columns:minmax(0,3fr) minmax(0,2fr)}}
+table{border-collapse:collapse;width:100%;font-size:15.5px}
+th,td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+th{position:sticky;top:0;background:var(--card);font-weight:600;color:var(--mut)}
+tbody tr.click{cursor:pointer}
+tbody tr.click:hover{background:var(--bg)}
+tr.sel{background:var(--ok-bg)}
+.tblwrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.badge{display:inline-block;padding:1px 8px;border-radius:99px;font-size:14px}
+.badge.ok{background:var(--ok-bg);color:var(--brand-d)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.bad{background:var(--bad-bg);color:var(--bad)}
+.alert{padding:8px 12px;border-radius:8px;font-size:15.5px;margin:6px 0}
+.alert.warn{background:var(--warn-bg);color:var(--warn)}
+.alert.bad{background:var(--bad-bg);color:var(--bad)}
+.alert.ok{background:var(--ok-bg);color:var(--brand-d)}
+.ans{display:grid;grid-template-columns:repeat(auto-fill,minmax(92px,1fr));gap:4px;max-height:300px;overflow:auto}
+.ans div{border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-size:15px;display:flex;justify-content:space-between;gap:6px}
+.ans div b{color:var(--brand-d)}
+.ans select{font:inherit;font-weight:700;color:var(--brand-d);border:0;background:transparent;padding:0;cursor:pointer;min-width:34px}
+.ans div.edit{background:var(--warn-bg);border-color:var(--warn)}
+.ans div.none{opacity:.4}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 8px;font-size:14px}
+.bar{height:8px;background:var(--line);border-radius:99px;overflow:hidden;margin-top:8px}
+.bar i{display:block;height:100%;width:0;background:var(--brand);transition:width .15s}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:14px;color:var(--mut);margin-top:6px}
+.legend span::before{content:"";display:inline-block;width:11px;height:11px;border-radius:50%;margin-right:5px;vertical-align:-1px;border:2px solid;background:var(--c,transparent);border-color:var(--b)}
+.pill{display:inline-flex;align-items:center;gap:6px}
+</style>
+</head>
+<body>
+<header>
+  <h1>ตรวจข้อสอบ OMR</h1>
+  <button class="btn sec" id="guideBtn" type="button" aria-expanded="false" aria-controls="guide">📖 คู่มือการใช้</button>
+  <p>ประมวลผลในเครื่องของคุณทั้งหมด ไฟล์สแกนไม่ถูกอัปโหลดไปไหน — ให้เฉลยสอนโปรแกรมว่าฟอร์มหน้าตาเป็นอย่างไร</p>
+</header>
+
+<main>
+<section class="card" id="guide" hidden>
+  <h2 style="margin-top:0">คู่มือการใช้</h2>
+  <h3>เตรียมไฟล์</h3>
+  <ol>
+    <li>สแกนเป็น PDF สีหรือ grayscale ตั้งแต่ 200 dpi ขึ้นไป (ไม่ใช้ขาวดำล้วน) 1 หน้า = 1 คน ใช้ฟอร์มชุดเดียวกันทั้งไฟล์</li>
+    <li>ไฟล์ไม่ถูกอัปโหลดไปไหน ประมวลผลในเครื่องของคุณทั้งหมด</li>
+  </ol>
+  <h3>ขั้นที่ 1 ตรวจเฉลย</h3>
+  <ol>
+    <li>กด <b>เลือกไฟล์เฉลย</b> เลือก PDF/ภาพที่ฝนเฉลยแล้ว (ใช้หน้าแรก) โปรแกรมจะหมุนภาพและหาบล็อกให้เอง</li>
+    <li>หรือใช้ <b>CSV เฉลย</b> แทนการฝน: กด "ดาวน์โหลดไฟล์ CSV ตัวอย่าง" กรอกเฉลยแล้วเลือกไฟล์กลับเข้ามา (ใช้กับกระดาษเปล่าที่ไม่ฝนได้)</li>
+    <li>ดูภาพที่วงทับ: เขียว = อ่านว่าฝน, เทา = ช่องที่ไม่ฝน, แดง = ช่องที่หาไม่เจอ ตรวจว่าครบตามกระดาษจริง</li>
+    <li>เฉลยฝนผิด แก้ได้ในตาราง "เฉลยที่อ่านได้" ไม่ต้องสแกนใหม่</li>
+    <li>บล็อกที่ไม่ต้องการ (เช่น ช่องลายมือที่ถูกนับเป็นช่อง หรือบล็อกที่ถูกสแกนตัดขอบ) <b>คลิกกรอบในภาพ</b> หรือติ๊กออกในตาราง จะเป็นสีเทาและไม่ถูกนำไปใช้</li>
+    <li>ตั้งชื่อบล็อกข้อมูลได้ (เช่น รหัสนักศึกษา) ชื่อนี้จะเป็นหัวคอลัมน์ใน CSV</li>
+    <li>ถูกต้องแล้วกด <b>ยืนยันเฉลย</b></li>
+  </ol>
+  <h3>ขั้นที่ 2 ตรวจกระดาษคำตอบ</h3>
+  <ol>
+    <li>เลือก PDF กระดาษคำตอบของนักศึกษา รอตรวจ (ประมาณ 0.3 วินาทีต่อใบ)</li>
+    <li>ดูตารางผล ใบที่ขึ้น "ต้องตรวจซ้ำ" จะบอกเหตุผลข้างๆ (ไม่ฝน / ฝนซ้อน / รหัสไม่ครบ) คลิกแถวเพื่อดูภาพกระดาษ</li>
+    <li>กด <b>ดาวน์โหลด CSV</b> เปิดใน Excel ได้ ภาษาไทยไม่เพี้ยน</li>
+  </ol>
+  <h3>ถ้าผลไม่ถูก</h3>
+  <ol>
+    <li>วงกลมหายหรือเกิน ลองปรับใน "ตั้งค่าขั้นสูง" (ความไวต่อขอบวงกลม / เกณฑ์ความเข้มของการฝน) แล้ววิเคราะห์ใหม่</li>
+    <li>สแกนเอียงหรือซีดมาก ให้สแกนใหม่ที่ความละเอียดสูงขึ้น</li>
+  </ol>
+</section>
+<!-- ===== ขั้นที่ 1 ===== -->
+<section class="card" id="s1">
+  <h2><span class="num">1</span>ตรวจเฉลย</h2>
+  <div class="row">
+    <label class="btn">เลือกไฟล์เฉลย (PDF / ภาพ)
+      <input type="file" id="keyFile" accept=".pdf,image/*" hidden>
+    </label>
+    <button class="btn sec" id="sciForm" type="button" title="ใช้ฟอร์มกระดาษคำตอบ SCI เปล่าที่แนบมา (ไม่ต้องสแกนเฉลย) แล้วอัปโหลด CSV เฉลยต่อ">ใช้ฟอร์ม SCI มาตรฐาน (กระดาษเปล่า)</button>
+    <span class="mut" id="keyName">ยังไม่ได้เลือกไฟล์ — ใช้หน้าแรกของไฟล์เป็นเฉลย</span>
+  </div>
+  <div class="row" style="margin-top:8px">
+    <label class="btn sec">เลือกไฟล์ CSV เฉลย (ไม่ต้องฝน)
+      <input type="file" id="csvFile" accept=".csv,.txt,text/csv" hidden>
+    </label>
+    <button class="btn sec" id="csvSample" type="button">ดาวน์โหลดไฟล์ CSV ตัวอย่าง</button>
+    <button class="btn sec" id="csvClear" type="button" hidden>เอา CSV ออก</button>
+    <span class="mut" id="csvName">ถ้ามี CSV เฉลย ใช้ร่วมกับกระดาษเปล่า (ไม่ฝน) ได้ โปรแกรมใช้ภาพแค่บอกโครงสร้างฟอร์ม · คอลัมน์: ข้อ, เฉลย (1–5 / ก–จ / A–E, ว่าง = ไม่นับ)</span>
+  </div>
+  <details>
+    <summary>ตั้งค่าขั้นสูง</summary>
+    <div class="settings">
+      <label>ความละเอียดตอนแปลง PDF
+        <select id="pDpi"><option value="150">150 dpi (เร็ว)</option><option value="200" selected>200 dpi</option><option value="300">300 dpi (ละเอียด ช้า)</option></select>
+      </label>
+      <label>ความไวต่อขอบวงกลม: <b id="vInk">0.82</b>
+        <input type="range" id="pInk" min="0.6" max="0.95" step="0.01" value="0.82">
+        <span class="mut">เพิ่มถ้าหาวงกลมไม่เจอ (เส้นจาง) / ลดถ้าวงกลมติดกัน</span>
+      </label>
+      <label>เกณฑ์ความเข้มของการฝน: <b id="vThr">15%</b>
+        <input type="range" id="pThr" min="0.05" max="0.5" step="0.01" value="0.15">
+        <span class="mut">ช่องที่เข้มกว่าช่องว่างเกินค่านี้ = ฝน</span>
+      </label>
+      <label>สัญลักษณ์ตัวเลือก
+        <select id="pOpt"><option value="num">1 2 3 4 5</option><option value="thai">ก ข ค ง จ</option><option value="latin">A B C D E</option></select>
+      </label>
+    </div>
+    <div id="prevBox">
+      <h3>ตัวอย่างผลตามค่าที่ปรับ <span class="mut">(อัปเดตทันทีที่เลื่อน)</span></h3>
+      <canvas id="prevCv" style="max-width:100%;border:1px solid var(--line);border-radius:8px;background:#fff"></canvas>
+      <div class="mut" id="prevCap"></div>
+      <div class="mut"><b>ซ้าย</b> = ภาพจริง วงเขียว = ช่องที่อ่านว่าฝน (ปรับด้วย "เกณฑ์ความเข้ม") · <b>ขวา</b> = สิ่งที่โปรแกรมมองเห็นเป็นเส้น วงเขียว = วงกลมที่หาเจอ (ปรับด้วย "ความไวต่อขอบ")</div>
+    </div>
+    <div class="row" style="margin-top:10px"><button class="btn sec" id="reKey" disabled>วิเคราะห์เฉลยใหม่</button></div>
+  </details>
+
+  <div id="keyOut" hidden>
+    <div id="keyMsg"></div>
+    <div class="row" style="margin-top:8px">
+      <label class="pill mut">ขนาดภาพ
+        <select id="keyZoom"><option value="100%">พอดีหน้าจอ</option><option value="160%">160%</option><option value="240%">240%</option></select>
+      </label>
+      <label class="pill mut"><input type="checkbox" id="keyDebug"> ดูภาพ debug (สิ่งที่โปรแกรมมองเห็นเป็นเส้น)</label>
+    </div>
+    <div class="legend">
+      <span style="--b:#16a34a;--c:rgba(34,197,94,.5)">ช่องที่ฝนในเฉลย</span>
+      <span style="--b:#888">ช่องว่าง</span>
+      <span style="--b:#2563eb">กรอบ = บล็อกคำตอบ</span>
+      <span style="--b:#9333ea">กรอบ = บล็อกข้อมูลผู้สอบ</span>
+      <span style="--b:#ea580c">กรอบ = ช่องที่เฉลยไม่ฝน (ส่งออกค่าดิบ)</span>
+      <span style="--b:#9ca3af">สีเทา = ไม่เลือก (คลิกกรอบม่วง/ส้มในภาพเพื่อสลับ)</span>
+    </div>
+    <div class="alert ok" style="margin:8px 0">เคล็ดลับ: <b>คลิกที่กรอบสีม่วง/ส้มในภาพ</b> เพื่อ <b>ไม่เลือก</b> บล็อกนั้น (ไม่ต้องการส่งออกใน CSV เช่น วงลายมือที่ถูกนับเป็นช่อง) จะเปลี่ยนเป็นสีเทา · คลิกอีกครั้งเพื่อเลือกกลับ</div>
+    <div class="viewer" id="keyViewer"><canvas id="keyCanvas"></canvas></div>
+
+    <div class="grid2 split">
+      <div>
+        <h3>บล็อกที่โปรแกรมพบ <span class="mut">(แก้ชื่อได้ ชื่อจะเป็นหัวคอลัมน์ใน CSV · ติ๊กออก = ไม่เลือก)</span></h3>
+        <div class="tblwrap"><table><thead><tr><th>#</th><th>ประเภท</th><th>ขนาด</th><th>ใส่ใน CSV</th><th>ชื่อคอลัมน์</th></tr></thead><tbody id="blkBody"></tbody></table></div>
+      </div>
+      <div>
+        <h3>เฉลยที่อ่านได้ <span class="mut" id="ansCount"></span></h3>
+        <div class="ans" id="ansGrid"></div>
+      </div>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" id="confirmKey">ยืนยันเฉลย</button>
+      <span class="mut" id="confirmNote">ตรวจเทียบกับกระดาษจริงก่อนกดยืนยัน</span>
+    </div>
+  </div>
+</section>
+
+<!-- ===== ขั้นที่ 2 ===== -->
+<section class="card locked" id="s2">
+  <h2><span class="num">2</span>ตรวจกระดาษคำตอบ</h2>
+  <div class="row">
+    <label class="btn">เลือก PDF กระดาษคำตอบ (หลายหน้า)
+      <input type="file" id="stuFile" accept=".pdf,image/*" hidden>
+    </label>
+    <span class="mut" id="stuName">1 หน้า = 1 คน</span>
+  </div>
+  <div class="bar" id="stuBar" hidden><i></i></div>
+  <div class="mut" id="stuProg"></div>
+
+  <div id="stuOut" hidden>
+    <h3>โครงสร้างไฟล์ CSV ที่จะได้</h3>
+    <div class="chips" id="colPreview"></div>
+    <div class="row" style="margin-top:10px">
+      <label class="pill mut">ค่าในคอลัมน์ข้อ
+        <select id="csvMode"><option value="given">คำตอบที่ฝน</option><option value="ok">ถูก/ผิด (1/0)</option></select>
+      </label>
+      <label class="pill mut"><input type="checkbox" id="csvText" checked> ป้องกัน Excel ตัดเลข 0 นำหน้า (ข้อมูลผู้สอบ)</label>
+      <label class="pill mut"><input type="checkbox" id="onlyFlag"> แสดงเฉพาะใบที่ต้องตรวจซ้ำ</label>
+      <button class="btn" id="dlCsv">ดาวน์โหลด CSV</button>
+    </div>
+    <div id="sumLine" class="mut" style="margin-top:8px"></div>
+    <div class="tblwrap" style="margin-top:8px"><table><thead id="resHead"></thead><tbody id="resBody"></tbody></table></div>
+
+    <div id="detail" hidden>
+      <h3 id="detTitle"></h3>
+      <div id="detReasons"></div>
+      <div class="row">
+        <button class="btn sec" id="detPrev">‹ ก่อนหน้า</button>
+        <button class="btn sec" id="detNext">ถัดไป ›</button>
+        <button class="btn sec" id="detClose">ปิด</button>
+      </div>
+      <div class="legend">
+        <span style="--b:#16a34a;--c:rgba(34,197,94,.5)">ฝนถูก</span>
+        <span style="--b:#dc2626;--c:rgba(220,38,38,.45)">ฝนผิด</span>
+        <span style="--b:#2563eb">คำตอบที่ถูก (เมื่อฝนผิด/ไม่ฝน)</span>
+        <span style="--b:#9333ea;--c:rgba(147,51,234,.5)">ข้อมูลผู้สอบ / ช่องดิบที่ฝน</span>
+        <span style="--b:#bbb">ช่องว่าง</span>
+        <span style="--b:#e6b800;--c:#fff000">ไฮไลต์เหลือง = ข้อ/หลักที่มีปัญหา</span>
+      </div>
+      <div class="viewer"><canvas id="detCanvas"></canvas></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<script src="asset/sci-form.js"></script>
+<script>
+/* =====================================================================
+   OMR Grader — ทำงานในเบราว์เซอร์ล้วน
+   แนวคิด: หาวงกลมทั้งหมดจากเฉลย -> จัดเป็นบล็อก -> แยกประเภทจากรูปแบบการฝน
+   กระดาษคำตอบแต่ละใบถูกจัดภาพทับเฉลยด้วยตำแหน่งวงกลม (ICP + affine)
+   ===================================================================== */
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const median = a => { if (!a.length) return 0; const s = [...a].sort((x,y)=>x-y), m = s.length>>1; return s.length%2 ? s[m] : (s[m-1]+s[m])/2; };
+const tick = () => new Promise(r => setTimeout(r, 0));
+
+const P = { dpi:200, ink:0.82, thr:0.15, opt:'num' };
+const S = { csv:null, keyFile:null, keyRaw:null, keyAn:null, key:null, confirmed:false, stuSrc:null, results:[], sel:-1 };
+
+const optLabel = i => P.opt==='thai' ? ('กขคงจฉชซฌญ'[i] || i+1) : P.opt==='latin' ? String.fromCharCode(65+i) : String(i+1);
+
+/* ---------- โหลด PDF.js (ลอง lib/ ในโฟลเดอร์ก่อน แล้วค่อยไป CDN) ---------- */
+// ลองอินเทอร์เน็ต (CDN) ก่อน ถ้าไม่ได้/ออฟไลน์ ใช้ไฟล์ในโฟลเดอร์ lib/ แทน
+const LIBS = {
+  js:['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js','lib/pdf.min.js'],
+  worker:['https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js','lib/pdf.worker.min.js']
+};
+let pdfReady = null;
+const LOAD_TIMEOUT = 6000;   // เน็ตค้าง/ช้ามาก → ข้ามไปใช้ lib/
+const loadScript = url => new Promise((res, rej) => {
+  const s=document.createElement('script'), t=setTimeout(()=>{ s.remove(); rej(new Error('timeout '+url)); }, LOAD_TIMEOUT);
+  s.src=url; s.onload=()=>{ clearTimeout(t); res(); }; s.onerror=()=>{ clearTimeout(t); rej(new Error(url)); }; document.head.appendChild(s);
+});
+function ensurePdfJs(){
+  if (window.pdfjsLib) return Promise.resolve();
+  if (!pdfReady) pdfReady = (async () => {
+    for (const u of LIBS.js){ try { await loadScript(u); if (window.pdfjsLib) break; } catch(e){} }
+    if (!window.pdfjsLib) throw new Error('โหลด PDF.js ไม่สำเร็จ — ต้องต่ออินเทอร์เน็ต หรือวางไฟล์ไว้ในโฟลเดอร์ lib/ (pdf.min.js, pdf.worker.min.js)');
+    let blob = null;
+    for (const u of LIBS.worker){ try { const r = await fetch(u, { signal:AbortSignal.timeout(LOAD_TIMEOUT) }); if (r.ok){ blob = URL.createObjectURL(new Blob([await r.text()], {type:'text/javascript'})); break; } } catch(e){} }
+    if (!blob){   // เปิดแบบ file:// แล้ว fetch ไม่ได้ → โหลด worker เป็น script ธรรมดา (PDF.js จะรันแทนในหน้าหลัก)
+      for (const u of LIBS.worker){ try { await loadScript(u); if (window.pdfjsWorker) break; } catch(e){} }
+    }
+    pdfjsLib.GlobalWorkerOptions.workerSrc = blob || LIBS.worker[1];
+  })().catch(e => { pdfReady = null; throw e; });
+  return pdfReady;
+}
+
+/* แหล่งภาพ: PDF หรือไฟล์ภาพ -> { n, render(i) => canvas } */
+async function openSource(file){
+  if (/^image\//.test(file.type) || /\.(png|jpe?g|webp|bmp)$/i.test(file.name)){
+    const bmp = await createImageBitmap(file);
+    return { n:1, async render(){ const c = document.createElement('canvas'); c.width=bmp.width; c.height=bmp.height; const x=c.getContext('2d'); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height); x.drawImage(bmp,0,0); return c; } };
+  }
+  await ensurePdfJs();
+  const doc = await pdfjsLib.getDocument({ data:new Uint8Array(await file.arrayBuffer()) }).promise;
+  return { n:doc.numPages, async render(i){
+    const pg = await doc.getPage(i), vp = pg.getViewport({ scale:P.dpi/72 });
+    const c = document.createElement('canvas'); c.width=Math.round(vp.width); c.height=Math.round(vp.height);
+    const x = c.getContext('2d', {willReadFrequently:true}); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
+    await pg.render({ canvasContext:x, viewport:vp }).promise; pg.cleanup(); return c;
+  }};
+}
+
+/* ---------- ประมวลผลภาพ ---------- */
+function pctValue(h, q, total){ let acc=0; for (let i=0;i<256;i++){ acc+=h[i]; if (acc>=q*total) return i; } return 255; }
+
+// minCh = เห็นหมึกสีทุกชนิด (ใช้หาวงกลม) / maxCh = หมึกสีหายไป เหลือแต่ดินสอสีเทา (ใช้วัดการฝน)
+function prepare(canvas){
+  const W=canvas.width, H=canvas.height, N=W*H;
+  const d = canvas.getContext('2d', {willReadFrequently:true}).getImageData(0,0,W,H).data;
+  const minCh=new Uint8Array(N), maxCh=new Uint8Array(N), hMin=new Uint32Array(256), hMax=new Uint32Array(256);
+  for (let i=0,j=0;j<N;i+=4,j++){
+    const r=d[i], g=d[i+1], b=d[i+2];
+    const mn = r<g ? (r<b?r:b) : (g<b?g:b), mx = r>g ? (r>b?r:b) : (g>b?g:b);
+    minCh[j]=mn; maxCh[j]=mx; hMin[mn]++; hMax[mx]++;
+  }
+  return { W, H, minCh, maxCh, paperMin:pctValue(hMin,.8,N)||255, paperMax:pctValue(hMax,.8,N)||255 };
+}
+
+// หาวงกลม: ขอบเข้ม -> ขยาย 1px -> connected components -> กรองตามขนาด/สัดส่วน
+function detect(prep, ink){
+  const { W, H, minCh, paperMin } = prep, N=W*H, thr=paperMin*ink;
+  const m = new Uint8Array(N);
+  // เทียบกับพื้นหลังรอบๆ (ค่าเฉลี่ยในหน้าต่าง) แทนกระดาษทั้งแผ่น — วงบนพื้นชมพูของฟอร์มจะได้ไม่จางหาย
+  const R=Math.max(8,Math.round(0.011*Math.max(W,H))), W1=W+1, ii=new Uint32Array(W1*(H+1));
+  for (let y=0;y<H;y++){ let row=0; const o=y*W, a=(y+1)*W1, b=y*W1; for (let x=0;x<W;x++){ row+=minCh[o+x]; ii[a+x+1]=(ii[b+x+1]+row)>>>0; } }
+  for (let y=0;y<H;y++){
+    const y0=Math.max(0,y-R), y1=Math.min(H,y+R+1);
+    for (let x=0;x<W;x++){
+      const x0=Math.max(0,x-R), x1=Math.min(W,x+R+1);
+      const s=(ii[y1*W1+x1]-ii[y0*W1+x1]-ii[y1*W1+x0]+ii[y0*W1+x0])>>>0, bg=s/((x1-x0)*(y1-y0));
+      m[y*W+x] = minCh[y*W+x] < Math.min(bg,paperMin)*ink ? 1 : 0;
+    }
+  }
+  // ตัดเส้นตรงยาว (เส้นตาราง/ขอบฟอร์ม) ออก ไม่ให้วงกลมที่ติดเส้นถูกรวมเป็นก้อนเดียวกับเส้น — ส่วนโค้งของวงสั้นกว่านี้มาก
+  const LR=Math.round(0.03*Math.max(W,H)), vlines=[];   // vlines = เส้นตั้งยาว ใช้แยกกลุ่มวงกลมที่คั่นด้วยเส้นหนา (เช่น รหัสนักศึกษา | รหัสวิชา)
+  // เส้นบางที่ขาดเป็นท่อนสั้นๆ (เช่น ขอบล่างของตารางรหัสที่ชิดวงกลมแถวสุดท้ายและแถบดำ) ก็ตัดด้วย: ท่อนยาว > 0.8 เท่าของวง และบาง (ไม่มีหมึกห่างขึ้น/ลง 2 px)
+  const LR2=Math.round(0.012*Math.max(W,H));
+  const thinH=(y,a,b)=>{ if (y<2||y>=H-2) return false; let n=0; for (let x=a;x<b;x++) if (!m[(y-2)*W+x] && !m[(y+2)*W+x]) n++; return n>=0.9*(b-a); };
+  const thinV=(x,a,b)=>{ if (x<2||x>=W-2) return false; let n=0; for (let y=a;y<b;y++) if (!m[y*W+x-2] && !m[y*W+x+2]) n++; return n>=0.9*(b-a); };
+  for (let y=0;y<H;y++){ const o=y*W; let s=-1; for (let x=0;x<=W;x++){ const on=x<W && m[o+x]===1; if (on){ if (s<0) s=x; } else if (s>=0){ if (x-s>LR || (x-s>LR2 && thinH(y,s,x))) m.fill(0,o+s,o+x); s=-1; } } }
+  for (let x=0;x<W;x++){ let s=-1; for (let y=0;y<=H;y++){ const on=y<H && m[y*W+x]===1; if (on){ if (s<0) s=y; } else if (s>=0){ if (y-s>LR){ for (let k=s;k<y;k++) m[k*W+x]=0; vlines.push([x,s,y]); } else if (y-s>LR2 && thinV(x,s,y)) for (let k=s;k<y;k++) m[k*W+x]=0; s=-1; } } }
+  const t = new Uint8Array(N), d = new Uint8Array(N);
+  for (let y=1;y<H-1;y++){ const o=y*W; for (let x=1;x<W-1;x++){ const i=o+x; t[i] = m[i]|m[i-1]|m[i+1]; } }
+  for (let y=1;y<H-1;y++){ const o=y*W; for (let x=1;x<W-1;x++){ const i=o+x; d[i] = t[i]|t[i-W]|t[i+W]; } }
+  const stack = new Int32Array(N), minS=W*0.005, maxS=W*0.045, cand=[];
+  for (let y=1;y<H-1;y++){
+    for (let x=1;x<W-1;x++){
+      const i0=y*W+x; if (d[i0]!==1) continue;
+      let sp=0, x0=x,x1=x,y0=y,y1=y, area=0; stack[sp++]=i0; d[i0]=2;
+      while (sp){
+        const p=stack[--sp], py=(p/W)|0, px=p-py*W; area++;
+        if (px<x0) x0=px; else if (px>x1) x1=px; if (py<y0) y0=py; else if (py>y1) y1=py;
+        if (d[p-1]===1){d[p-1]=2;stack[sp++]=p-1;} if (d[p+1]===1){d[p+1]=2;stack[sp++]=p+1;}
+        if (d[p-W]===1){d[p-W]=2;stack[sp++]=p-W;} if (d[p+W]===1){d[p+W]=2;stack[sp++]=p+W;}
+      }
+      const w=x1-x0-1, h=y1-y0-1;   // หักส่วนที่ขยายออกไป
+      // วงกลม/วงที่ฝนเต็ม เติมได้ราว 78% ของกรอบ — สี่เหลี่ยมทึบ (timing mark) เติม ~100% จึงตัดทิ้ง
+      if (w>=minS && h>=minS && w<=maxS && h<=maxS && w/h>0.7 && w/h<1.43 && area<0.9*(w+2)*(h+2)) cand.push({ x:(x0+x1)/2, y:(y0+y1)/2, s:(w+h)/2 });
+    }
+  }
+  if (cand.length<5) return { circles:[], D:0, thr, d, vlines };
+  // ขนาดวงกลมที่พบบ่อยที่สุด = ขนาดวงกลมของฟอร์ม
+  let best=0, bestS=0;
+  for (const c of cand){ let n=0; for (const o of cand) if (o.s>=c.s*.88 && o.s<=c.s*1.12) n++; if (n>best){best=n;bestS=c.s;} }
+  const D = median(cand.filter(c=>c.s>=bestS*.88&&c.s<=bestS*1.12).map(c=>c.s));
+  return { circles:cand.filter(c=>c.s>=D*.8&&c.s<=D*1.3), D, thr, d, vlines };
+}
+
+// มุมเอียงของกระดาษ จากแนวของวงกลมที่อยู่ติดกัน
+function estimateAngle(circ, D){
+  const a=[];
+  for (const p of circ){
+    let bx=null, by=null;
+    for (const q of circ){
+      const dx=q.x-p.x, dy=q.y-p.y;
+      if (dx>0.8*D && dx<3*D && Math.abs(dy)<0.5*D && (!bx||dx<bx.dx)) bx={dx,dy};
+      if (dy>0.8*D && dy<3*D && Math.abs(dx)<0.5*D && (!by||dy<by.dy)) by={dx,dy};
+    }
+    if (bx) a.push(Math.atan2(bx.dy,bx.dx));
+    if (by) a.push(Math.atan2(-by.dx,by.dy));
+  }
+  return a.length>10 ? median(a) : 0;
+}
+function rotateCanvas(src, ang){
+  const c=document.createElement('canvas'); c.width=src.width; c.height=src.height;
+  const x=c.getContext('2d', {willReadFrequently:true}); x.fillStyle='#fff'; x.fillRect(0,0,c.width,c.height);
+  x.translate(c.width/2,c.height/2); x.rotate(-ang); x.drawImage(src,-c.width/2,-c.height/2); return c;
+}
+/* ---------- หมุนภาพตั้งตรงอัตโนมัติ จากแถบสี่เหลี่ยมดำ (timing marks) ----------
+   ฟอร์มมาตรฐาน: แถบดำเรียงเป็นแนวยาวอยู่ขอบล่าง — หาแถบนั้นว่าอยู่ขอบไหน แล้วหมุนทีละ 90° ให้ไปอยู่ล่าง */
+function collectBars(prep){
+  const { W, H, maxCh, paperMax } = prep, N=W*H, M=Math.max(W,H), thr=paperMax*0.4;
+  const m=new Uint8Array(N);
+  for (let i=0;i<N;i++) m[i] = maxCh[i]<thr ? 1 : 0;   // ดำสนิทเท่านั้น (หมึกแดง/ชมพูของฟอร์มไม่นับ)
+  const stack=new Int32Array(N), bars=[];
+  for (let y=0;y<H;y++){
+    for (let x=0;x<W;x++){
+      const i0=y*W+x; if (m[i0]!==1) continue;
+      let sp=0, x0=x,x1=x,y0=y,y1=y, area=0; stack[sp++]=i0; m[i0]=2;
+      while (sp){
+        const p=stack[--sp], py=(p/W)|0, px=p-py*W; area++;
+        if (px<x0) x0=px; else if (px>x1) x1=px; if (py<y0) y0=py; else if (py>y1) y1=py;
+        if (px>0 && m[p-1]===1){m[p-1]=2;stack[sp++]=p-1;} if (px<W-1 && m[p+1]===1){m[p+1]=2;stack[sp++]=p+1;}
+        if (py>0 && m[p-W]===1){m[p-W]=2;stack[sp++]=p-W;} if (py<H-1 && m[p+W]===1){m[p+W]=2;stack[sp++]=p+W;}
+      }
+      const w=x1-x0+1, h=y1-y0+1, lo=Math.min(w,h), hi=Math.max(w,h);
+      if (lo>=Math.max(3,0.002*M) && hi>=0.008*M && hi<=0.06*M && hi>=1.8*lo && hi<=14*lo && area>=0.7*w*h)
+        bars.push({ x:(x0+x1)/2, y:(y0+y1)/2, hor:w>h, len:hi });
+    }
+  }
+  return bars;
+}
+// แถบที่เรียงกันเป็นแนวเดียวกันมากที่สุด (≥ 6 แท่ง) → { n, hor, pos, members }
+function pickStrip(bars){
+  let best=null;
+  for (const hor of [true,false]){
+    // แถบที่ยาวตามแนวนอน เรียงกันเป็นแนวตั้ง (ขอบซ้าย/ขวา) — และกลับกัน
+    const g=bars.filter(b=>b.hor===hor).map(b=>({ c:hor?b.x:b.y, len:b.len, b })).sort((a,b)=>a.c-b.c);
+    for (let i=0, j=0;i<g.length;i++){
+      const tol=1.2*g[i].len; while (g[j].c<g[i].c-tol) j++;
+      const n=i-j+1; if (n>=6 && (!best||n>best.n)){ let s=0; for (let k=j;k<=i;k++) s+=g[k].c; best={ n, hor, pos:s/n, members:g.slice(j,i+1).map(e=>e.b) }; }
+    }
+  }
+  return best;
+}
+function findStrip(prep){
+  const { W, H } = prep, best=pickStrip(collectBars(prep));
+  if (!best) return { k:0, found:false };
+  const far = best.pos > (best.hor?W:H)/2;
+  // k = จำนวนครั้งที่ต้องหมุนตามเข็ม 90° เพื่อให้แถบไปอยู่ขอบล่าง
+  const k = best.hor ? (far?1:3) : (far?0:2);
+  return { k, found:true, n:best.n };
+}
+// ภาพตั้งตรงแล้ว: ตำแหน่ง x ของแถบดำตามขอบล่าง (เรียงจากซ้ายไปขวา) — ใช้วัดการยืด/หดของภาพตามแนวป้อนกระดาษ
+function bottomBars(prep){
+  const best=pickStrip(collectBars(prep));
+  if (!best || best.hor || best.pos<prep.H/2) return null;
+  return { xs:best.members.map(b=>b.x).sort((a,b)=>a-b), y:median(best.members.map(b=>b.y)), len:median(best.members.map(b=>b.len)) };
+}
+function rotateQuarter(src, k){
+  k=((k%4)+4)%4; if (!k) return src;
+  const w=src.width, h=src.height, c=document.createElement('canvas');
+  c.width = k===2 ? w : h; c.height = k===2 ? h : w;
+  const x=c.getContext('2d', {willReadFrequently:true});
+  if (k===1){ x.translate(h,0); x.rotate(Math.PI/2); } else if (k===2){ x.translate(w,h); x.rotate(Math.PI); } else { x.translate(0,w); x.rotate(-Math.PI/2); }
+  x.drawImage(src,0,0); return c;
+}
+function analyze(canvas, keepMask){
+  let prep=prepare(canvas), quarter=0, strip=findStrip(prep);
+  if (strip.k){ quarter=strip.k*90; canvas=rotateQuarter(canvas,strip.k); prep=prepare(canvas); }
+  let det=detect(prep,P.ink), angle=0;
+  if (det.circles.length>20){
+    const a=estimateAngle(det.circles,det.D);
+    if (Math.abs(a)>0.12*Math.PI/180){ angle=a; canvas=rotateCanvas(canvas,a); prep=prepare(canvas); det=detect(prep,P.ink); }
+  }
+  if (!keepMask) det.d=null;
+  const bars=bottomBars(prep);
+  // แถบดำที่ติดเส้น/ชิดกันอาจถูกนับเป็นวงกลม → ตัดสิ่งที่อยู่ในแนวแถบดำออก
+  if (bars && det.circles.length) det.circles=det.circles.filter(c=>Math.abs(c.y-bars.y)>0.8*bars.len);
+  return { canvas, prep, det, angle, quarter, strip, bars };
+}
+
+/* ---------- จัดกลุ่มวงกลมเป็นบล็อก ---------- */
+function clusterAxis(vals, D){
+  const s=[...vals].sort((a,b)=>a-b), groups=[[s[0]]];
+  for (let i=1;i<s.length;i++){ if (s[i]-s[i-1]>0.5*D) groups.push([s[i]]); else groups[groups.length-1].push(s[i]); }
+  let cs = groups.map(g=>g.reduce((a,b)=>a+b,0)/g.length);
+  if (cs.length>=3){            // เติมแถว/คอลัมน์ที่วงกลมหายไปตรงกลาง
+    const d=[]; for (let i=0;i<cs.length-1;i++) d.push(cs[i+1]-cs[i]);
+    const pitch=[...d].sort((a,b)=>a-b)[Math.floor(d.length*.25)], out=[cs[0]];
+    for (let i=0;i<d.length;i++){
+      const k=Math.round(d[i]/pitch);
+      if (k>=2 && Math.abs(d[i]/pitch-k)<0.2) for (let j=1;j<k;j++) out.push(cs[i]+d[i]*j/k);
+      out.push(cs[i+1]);
+    }
+    cs=out;
+  }
+  return cs;
+}
+function buildBlocks(circ, D, vlines=[]){
+  const n=circ.length; if (!n) return [];
+  const nn=circ.map((a,i)=>{ let m=1e9; for (let j=0;j<n;j++){ if (j!==i){ const d=Math.hypot(a.x-circ[j].x,a.y-circ[j].y); if (d<m) m=d; } } return m; });
+  const L=1.6*median(nn), par=circ.map((_,i)=>i);
+  const find=i=>{ while(par[i]!==i){ par[i]=par[par[i]]; i=par[i]; } return i; };
+  for (let i=0;i<n;i++) for (let j=i+1;j<n;j++){
+    const dx=Math.abs(circ[i].x-circ[j].x), dy=Math.abs(circ[i].y-circ[j].y);
+    if ((dy<.5*D && dx<L) || (dx<.5*D && dy<L)){
+      if (dy<.5*D){   // มีเส้นตั้งยาวคั่นระหว่างสองวง = คนละกลุ่ม
+        const xa=Math.min(circ[i].x,circ[j].x)+.25*D, xb=Math.max(circ[i].x,circ[j].x)-.25*D, y=circ[i].y;
+        if (vlines.some(v=>v[0]>=xa && v[0]<=xb && y>=v[1]-.5*D && y<=v[2]+.5*D)) continue;
+      }
+      par[find(i)]=find(j);
+    }
+  }
+  const groups=new Map(); circ.forEach((c,i)=>{ const r=find(i); if(!groups.has(r)) groups.set(r,[]); groups.get(r).push(c); });
+  const blocks=[];
+  for (let g of groups.values()){
+    // ตัดคอลัมน์/แถวที่มีวงกลมน้อยผิดปกติ (เช่น กล่องเลขที่อยู่ติดขอบ หรือลายมือที่เป็นวง) ออกจากบล็อก
+    for (let pass=0; pass<2 && g.length>=8; pass++){
+      const cx=clusterAxis(g.map(c=>c.x),D), cy=clusterAxis(g.map(c=>c.y),D);
+      const nr=(arr,v)=>{ let bi=0; arr.forEach((a,i)=>{ if (Math.abs(a-v)<Math.abs(arr[bi]-v)) bi=i; }); return bi; };
+      const nc=cx.map(()=>0), nrw=cy.map(()=>0); for (const c of g){ nc[nr(cx,c.x)]++; nrw[nr(cy,c.y)]++; }
+      const keep=g.filter(c=>(cy.length<4||nc[nr(cx,c.x)]>=0.4*cy.length) && (cx.length<4||nrw[nr(cy,c.y)]>=0.4*cx.length));
+      if (keep.length===g.length) break; g=keep;
+    }
+    if (g.length<2) continue;
+    const cols=clusterAxis(g.map(c=>c.x),D), rows=clusterAxis(g.map(c=>c.y),D);
+    const near=(arr,v)=>{ let bi=0; arr.forEach((a,i)=>{ if (Math.abs(a-v)<Math.abs(arr[bi]-v)) bi=i; }); return bi; };
+    const cells=rows.map(y=>cols.map(x=>({x,y,det:false})));
+    for (const c of g){ const cell=cells[near(rows,c.y)][near(cols,c.x)]; cell.x=c.x; cell.y=c.y; cell.det=true; }
+    blocks.push({ cols, rows, cells, cx:cols.reduce((a,b)=>a+b,0)/cols.length, cy:rows.reduce((a,b)=>a+b,0)/rows.length });
+  }
+  return blocks;
+}
+
+/* ---------- วัดความเข้มของการฝน ---------- */
+function makeOffsets(r){ const o=[], ri=Math.ceil(r); for (let dy=-ri;dy<=ri;dy++) for (let dx=-ri;dx<=ri;dx++) if (dx*dx+dy*dy<=r*r) o.push(dx,dy); return o; }
+function measure(prep, x, y, offs){
+  const { W,H,maxCh,paperMax } = prep, cx=Math.round(x), cy=Math.round(y); let s=0, n=0;
+  for (let k=0;k<offs.length;k+=2){
+    const px=cx+offs[k], py=cy+offs[k+1]; if (px<0||py<0||px>=W||py>=H) continue;
+    const v=paperMax-maxCh[py*W+px]; if (v>0) s+=v; n++;
+  }
+  return n ? s/n/paperMax : 0;
+}
+// เลือกช่องที่ฝน: เกินเกณฑ์ และไม่จางกว่า 55% ของช่องที่เข้มสุด (ตัดรอยลบออก)
+function pick(ds, thr){
+  let mx=0; ds.forEach(d=>{ if (d>=thr && d>mx) mx=d; });
+  const idx=[]; ds.forEach((d,i)=>{ if (d>=thr && d>=0.55*mx) idx.push(i); }); return idx;
+}
+const rng = list => { const out=[]; let i=0; list=[...list].sort((a,b)=>a-b); while(i<list.length){ let j=i; while(j+1<list.length && list[j+1]===list[j]+1) j++; out.push(i===j?list[i]:`${list[i]}-${list[j]}`); i=j+1; } return out.join(', '); };
+
+/* ---------- วิเคราะห์เฉลย: แยกประเภทบล็อกจากรูปแบบการฝน ---------- */
+function analyzeKey(an){
+  const D=an.det.D, blocks=buildBlocks(an.det.circles,D,an.det.vlines), offs=makeOffsets(0.3*D), warns=[];
+  const all=[];
+  for (const b of blocks) for (const row of b.cells) for (const c of row){ c.score=measure(an.prep,c.x,c.y,offs); all.push(c.score); }
+  const baseline=median(all);
+  for (const b of blocks) for (const row of b.cells) for (const c of row) c.delta=c.score-baseline;
+
+  for (const b of blocks){
+    const C=b.cols.length, raw=b.cells.map(r=>r.map(c=>c.delta>=P.thr));
+    const perRow=raw.map(r=>r.filter(Boolean).length), total=perRow.reduce((a,v)=>a+v,0);
+    if (!total){ b.type='blank'; continue; }
+    const rs=perRow.indexOf(Math.max(...perRow));
+    if (C>=2 && perRow[rs]>=2 && perRow[rs]===total && perRow[rs]>=C*0.5){
+      b.type='info'; b.use=true; b.idRow=rs; b.missing=[]; raw[rs].forEach((v,c)=>{ if(!v) b.missing.push(c); });
+    } else if (C>=2 && b.rows.length>=6 && perRow.some(v=>v>=2) && (()=>{      // ฝนเลขต่างแถวกัน แต่คอลัมน์ละไม่เกิน 1 ช่อง = ช่องรหัส (แต่ละคอลัมน์คือหนึ่งหลัก)
+      const pc=b.cols.map((_,c)=>raw.filter(r=>r[c]).length); return pc.every(v=>v<=1) && pc.filter(v=>v===1).length>=C*0.5; })()){
+      b.type='info'; b.use=true; b.idRow=null; b.missing=[]; b.cols.forEach((_,c)=>{ if (!raw.some(r=>r[c])) b.missing.push(c); });
+    } else b.type='answer';
+  }
+  const anyMarks=blocks.some(b=>b.type!=='blank');
+  for (const b of blocks) if (b.type==='blank'){
+    if (!anyMarks)    // กระดาษเปล่าทั้งแผ่น (ใช้คู่กับ CSV เฉลย): 10 แถว = ช่องรหัส, ตั้งแต่ 5 แถวขึ้นไป = บล็อกคำตอบ, น้อยกว่านั้น = ช่องดิบ
+      b.type = b.rows.length===10 && b.cols.length>=2 ? 'info' : b.rows.length>=5 ? 'answer' : 'raw';
+    else   // บล็อกว่างที่ขนาดเท่าบล็อกคำตอบ = ข้อที่เกินเฉลย; 10 แถวที่ไม่ฝน = ช่องรหัส (เลข 0–9)
+      b.type = blocks.some(o=>o.type==='answer'&&o.rows.length===b.rows.length&&o.cols.length===b.cols.length) ? 'answer' : b.rows.length>=10 ? 'info' : 'raw';
+  }
+
+  const answers=blocks.filter(b=>b.type==='answer').sort((a,b)=>a.cx-b.cx||a.cy-b.cy);
+  const graded=[], ungraded=[]; let q=1;
+  for (const b of answers){
+    b.qStart=q; b.keyAns=[];
+    b.cells.forEach((row,r)=>{
+      const idx=pick(row.map(c=>c.delta),P.thr);
+      if (idx.length===1){ b.keyAns.push(idx[0]); graded.push({ q:q+r, b, r, col:idx[0] }); }
+      else { b.keyAns.push(null); ungraded.push(q+r); if (idx.length>1) warns.push(`เฉลยข้อ ${q+r} ฝนหลายช่อง — ไม่นำมาคิด`); }
+    });
+    q+=b.rows.length;
+  }
+  const byPos=(a,b)=>a.cols[0]-b.cols[0]||a.rows[0]-b.rows[0];   // เรียงจากซ้ายไปขวา
+  for (const b of blocks) if (b.type==='info' && b.missing===undefined){ b.missing=[]; b.idRow=null; }
+  const others=blocks.filter(b=>b.type==='info'||b.type==='raw').sort(byPos);
+  const infos=others.filter(b=>b.type==='info'), raws=others.filter(b=>b.type==='raw');
+  blocks.forEach(b=>{ if (b.use===undefined) b.use=true; });   // ทุกบล็อกเลือกไว้ก่อน
+  others.forEach((b,i)=>{
+    b.name = b.type==='info' ? `ข้อมูล${i+1} (${b.cols.length} หลัก)` : `ช่องเลือก${i+1} (${b.rows.length}×${b.cols.length})`;
+    if (b.type==='info' && b.missing.length) warns.push(`${b.name}: เฉลยไม่ได้ฝนคอลัมน์ที่ ${b.missing.map(c=>c+1).join(', ')} — ตรวจให้แน่ใจว่าอ่านครบ`);
+  });
+  if (ungraded.length && graded.length) warns.push(`ข้อที่เฉลยไม่ฝน (ไม่นำมาคิดคะแนน): ${rng(ungraded)}`);
+  if (!graded.length) warns.push('ยังไม่มีเฉลย (ไม่พบรอยฝนในกระดาษ) — อัปโหลดไฟล์ CSV เฉลยต่อได้เลย ถ้าฝนเฉลยไว้แล้วแต่ไม่ขึ้น ลองปรับ "เกณฑ์ความเข้มของการฝน"');
+  if (blocks.some(b=>b.cells.flat().some(c=>!c.det))) warns.push('บางช่องหาวงกลมไม่เจอ (ใช้ตำแหน่งตามกริดแทน) — ดูภาพ debug');
+  return { blocks, answers, others, infos, raws, graded, ungraded, nq:q-1, D, circles:an.det.circles, baseline, warns };
+}
+
+/* ---------- จัดภาพกระดาษคำตอบให้ทับเฉลย ---------- */
+function makeHash(pts, g){ const m=new Map(); for (const p of pts){ const k=(Math.floor(p.x/g)+1000)*10000+Math.floor(p.y/g)+1000; if(!m.has(k)) m.set(k,[]); m.get(k).push(p); } return {m,g}; }
+function nearest(h, x, y, rad){
+  const g=h.g, r=Math.ceil(rad/g); let best=null, bd=rad;
+  const gx=Math.floor(x/g), gy=Math.floor(y/g);
+  for (let i=-r;i<=r;i++) for (let j=-r;j<=r;j++){ const a=h.m.get((gx+i+1000)*10000+gy+j+1000); if (a) for (const p of a){ const d=Math.hypot(p.x-x,p.y-y); if (d<=bd){ bd=d; best=p; } } }
+  return best;
+}
+function solve3(M,r){
+  const det=m=>m[0][0]*(m[1][1]*m[2][2]-m[1][2]*m[2][1])-m[0][1]*(m[1][0]*m[2][2]-m[1][2]*m[2][0])+m[0][2]*(m[1][0]*m[2][1]-m[1][1]*m[2][0]);
+  const d=det(M); if (Math.abs(d)<1e-9) return null;
+  return [0,1,2].map(i=>det(M.map((row,ri)=>row.map((v,ci)=>ci===i?r[ri]:v)))/d);
+}
+function fitAffine(pairs){
+  let Sxx=0,Sxy=0,Sx=0,Syy=0,Sy=0,n=pairs.length,Sxu=0,Syu=0,Su=0,Sxv=0,Syv=0,Sv=0;
+  for (const [x,y,u,v] of pairs){ Sxx+=x*x;Sxy+=x*y;Sx+=x;Syy+=y*y;Sy+=y;Sxu+=x*u;Syu+=y*u;Su+=u;Sxv+=x*v;Syv+=y*v;Sv+=v; }
+  const M=[[Sxx,Sxy,Sx],[Sxy,Syy,Sy],[Sx,Sy,n]], pu=solve3(M,[Sxu,Syu,Su]), pv=solve3(M,[Sxv,Syv,Sv]);
+  return pu&&pv ? { a:pu[0], b:pu[1], tx:pu[2], c:pv[0], d:pv[1], ty:pv[2] } : null;
+}
+// แผนที่ x จากเฉลยไปกระดาษนักศึกษา แบบเส้นตรงเป็นช่วงๆ ตามแถบดำทีละแท่ง
+// จับคู่แท่งด้วยการหาเส้นตรง x' = a·x + b ที่ทำให้แท่งตรงกันมากที่สุด (ไม่นับตามลำดับ → แท่งขาด/แท่งเกินไม่ทำให้ทั้งช่วงเลื่อนไป 1 คอลัมน์)
+function barMap(kb, sb){
+  if (!kb || !sb || kb.length<8 || sb.length<8) return null;
+  const n=kb.length, pitch=median(kb.slice(1).map((v,i)=>v-kb[i]));
+  const bin=0.25*pitch; let best=null;
+  for (let a=0.95; a<=1.05001; a+=0.002){
+    const hist=new Map();
+    for (const k of kb) for (const v of sb){ const key=Math.round((v-a*k)/bin); hist.set(key,(hist.get(key)||0)+1); }
+    for (const [key,c] of hist){ const t=c+(hist.get(key-1)||0)+(hist.get(key+1)||0); if (!best||t>best.t) best={ t, a, key }; }
+  }
+  if (!best) return null;
+  let a=best.a, b=best.key*bin, pairs=[];
+  for (const tol of [0.3,0.35,0.35]){
+    pairs=[]; const used=new Set();
+    for (const k of kb){ let bj=-1, bd=tol*pitch; sb.forEach((v,j)=>{ const d=Math.abs(v-(a*k+b)); if (d<=bd && !used.has(j)){ bd=d; bj=j; } }); if (bj>=0){ used.add(bj); pairs.push([k,sb[bj]]); } }
+    if (pairs.length<8) return null;
+    let Sx=0,Sy=0,Sxx=0,Sxy=0; for (const [x,y] of pairs){ Sx+=x; Sy+=y; Sxx+=x*x; Sxy+=x*y; }
+    const m=pairs.length, den=m*Sxx-Sx*Sx; if (Math.abs(den)<1e-9) return null;
+    a=(m*Sxy-Sx*Sy)/den; b=(Sy-a*Sx)/m;
+  }
+  if (pairs.length<0.7*n) return null;    // จับคู่ได้น้อยเกินไป = อ่านแถบไม่น่าเชื่อถือ → ใช้วิธีอื่น
+  const kx=pairs.map(p=>p[0]), sx=pairs.map(p=>p[1]), m=pairs.length;
+  return x=>{ let i=0; while (i<m-2 && x>=kx[i+1]) i++; return sx[i]+(x-kx[i])*(sx[i+1]-sx[i])/(kx[i+1]-kx[i]); };
+}
+// เส้นตั้งยาว (ขอบบล็อก/เส้นคั่นรหัส) เป็นจุดอ้างอิงที่ไม่ซ้ำกัน — ใช้ตัดสินว่าตารางวงกลมเลื่อนไป 1 คอลัมน์หรือไม่
+function mergeLines(vl, minLen){
+  const a=[...vl].sort((p,q)=>p[0]-q[0]), out=[];
+  for (const [x,y0,y1] of a){
+    const l=out[out.length-1];
+    if (l && x-l.x1<=2){ l.x1=x; l.xs+=x; l.n++; l.y0=Math.min(l.y0,y0); l.y1=Math.max(l.y1,y1); } else out.push({ x1:x, xs:x, n:1, y0, y1 });
+  }
+  return out.map(l=>({ x:l.xs/l.n, y0:l.y0, y1:l.y1, len:l.y1-l.y0 })).filter(l=>l.len>=minLen);
+}
+function alignPoints(kc, kD, sc, sD, kb, sb, kv, sv){
+  if (sc.length<10) return null;
+  const ratio=sD/kD, s0=ratio>0.7&&ratio<1.4 ? ratio : 1, hash=makeHash(sc,sD);
+  const fwd=(A,x,y)=>[A.a*x+A.b*y+A.tx, A.c*x+A.d*y+A.ty];
+
+  // วิธีที่ 1: affine ทั้งแผ่น (เลื่อน หมุน เอียง สเกล) จากการโหวตตำแหน่ง + ICP
+  function byAffine(){
+    const bs=sD*0.3, hist=new Map(), off=4000;
+    for (const k of kc) for (const s of sc){
+      const key=(Math.round((s.x-s0*k.x)/bs)+off)*10000+Math.round((s.y-s0*k.y)/bs)+off;
+      hist.set(key,(hist.get(key)||0)+1);
+    }
+    let bestKey=0, bestV=-1;
+    for (const key of hist.keys()){
+      const ix=Math.floor(key/10000), iy=key%10000; let v=0;
+      for (let i=-1;i<=1;i++) for (let j=-1;j<=1;j++) v+=hist.get((ix+i)*10000+iy+j)||0;
+      if (v>bestV){ bestV=v; bestKey=key; }
+    }
+    let A={ a:s0,b:0,c:0,d:s0, tx:(Math.floor(bestKey/10000)-off)*bs, ty:(bestKey%10000-off)*bs };
+    for (const rf of [0.9,0.7,0.5,0.4,0.4]){
+      const pairs=[];
+      for (const k of kc){ const [px,py]=fwd(A,k.x,k.y), m=nearest(hash,px,py,rf*sD); if (m) pairs.push([k.x,k.y,m.x,m.y]); }
+      if (pairs.length<6) break;
+      const nA=fitAffine(pairs); if (!nA) break; A=nA;
+    }
+    return { gp:(x,y)=>fwd(A,x,y), scale:Math.sqrt(Math.abs(A.a*A.d-A.b*A.c))||1 };
+  }
+
+  // วิธีที่ 2: แถบดำขอบล่างบอกตำแหน่ง x ของแต่ละช่วงโดยตรง (กันภาพยืด/หดไม่สม่ำเสมอ) แล้วหา y + การเอียงจากวงกลม
+  function byBars(){
+    const X=barMap(kb && kb.xs, sb && sb.xs); if (!X) return null;
+    // ตำแหน่งแถบดำเทียบกับขอบกระดาษไม่ซ้ำกัน → ใช้เป็นหลักยึดแนวตั้ง (การโหวตจากตารางวงกลมอาจเลื่อนไป 1 แถว)
+    const yb=kb.y, ty0=sb.y-s0*kb.y;
+    // y' = d*y + c*x + ty   และ   x' = X(x) + b*(y-yb) + tx
+    let P={ d:s0, c:0, ty:ty0, b:0, tx:0 };
+    const g=(P,x,y)=>[X(x)+P.b*(y-yb)+P.tx, P.d*y+P.c*x+P.ty];
+    for (const rf of [0.6,0.5,0.45,0.4]){
+      const py=[], px=[];
+      for (const k of kc){ const [gx,gy]=g(P,k.x,k.y), m=nearest(hash,gx,gy,rf*sD); if (m){ py.push([k.x,k.y,m.y]); px.push([k.y-yb,m.x-X(k.x)]); } }
+      if (py.length<6) break;
+      // กำลังสองน้อยสุดแบบตัดค่าผิดปกติ (วงกลมลายมือ/จับคู่ผิด) ทิ้งทีละรอบ
+      let use=py, sol=null;
+      for (let it=0; it<3; it++){
+        let Sxx=0,Sxy=0,Sx=0,Syy=0,Sy=0,Sxv=0,Syv=0,Sv=0; const n=use.length; if (n<6) break;
+        for (const [x,y,v] of use){ Sxx+=x*x;Sxy+=x*y;Sx+=x;Syy+=y*y;Sy+=y;Sxv+=x*v;Syv+=y*v;Sv+=v; }
+        const sl=solve3([[Sxx,Sxy,Sx],[Sxy,Syy,Sy],[Sx,Sy,n]],[Sxv,Syv,Sv]); if (!sl) break; sol=sl;
+        const res=py.map(([x,y,v])=>Math.abs(v-(sl[0]*x+sl[1]*y+sl[2]))), lim=Math.max(2,2.5*median(res));
+        use=py.filter((_,i)=>res[i]<=lim);
+      }
+      if (!sol || Math.abs(sol[1]/s0-1)>0.04 || Math.abs(sol[0])>0.03) break;    // ค่าที่เป็นไปไม่ได้ = จับคู่ผิด ใช้ค่าเดิม
+      const mx=median(px.map(e=>e[1])), pxs=px.filter(e=>Math.abs(e[1]-mx)<0.35*sD);
+      let q=0,qq=0,qu=0,qv=0; for (const [u,v] of pxs){ q+=u; qq+=u*u; qu+=v; qv+=u*v; }
+      const m=pxs.length, den=m*qq-q*q, b=Math.abs(den)>1e-9 ? (m*qv-q*qu)/den : 0;
+      P={ c:sol[0], d:sol[1], ty:sol[2], b, tx:(qu-b*q)/m };
+    }
+    return { gp:(x,y)=>g(P,x,y), scale:Math.sqrt(Math.abs(P.d*(X(kb.xs[kb.xs.length-1])-X(kb.xs[0]))/(kb.xs[kb.xs.length-1]-kb.xs[0])))||1, viaBars:true };
+  }
+
+  // สแกนจากเครื่องป้อนกระดาษมักยืด/หดไม่สม่ำเสมอ → ชดเชยเพิ่มเฉพาะที่
+  // = ค่ามัธยฐานของส่วนต่างตำแหน่งวงกลมที่จับคู่ได้ในบริเวณใกล้เคียง (รัศมี ~4.5 เท่าของวง)
+  function refine(base){
+    const gp=base.gp; let field=[];
+    const corr=(x,y)=>{
+      const rx=[], ry=[], R2=(4.5*sD)**2;
+      for (const f of field){ const dx=f.x-x, dy=f.y-y; if (dx*dx+dy*dy<=R2){ rx.push(f.rx); ry.push(f.ry); } }
+      return rx.length>=3 ? [median(rx),median(ry)] : [0,0];
+    };
+    const loc=(x,y)=>{ const [gx,gy]=gp(x,y), [cx,cy]=corr(x,y); return [gx+cx,gy+cy]; };
+    for (const rf of base.viaBars?[0.5,0.45]:[0.9,0.6,0.45]){
+      const nf=[];
+      for (const k of kc){ const [px,py]=loc(k.x,k.y), m=nearest(hash,px,py,rf*sD); if (m){ const [gx,gy]=gp(k.x,k.y); nf.push({ x:k.x, y:k.y, rx:m.x-gx, ry:m.y-gy }); } }
+      if (nf.length<6) break; field=nf;
+    }
+    let matched=0;
+    for (const k of kc){ const [px,py]=loc(k.x,k.y); if (nearest(hash,px,py,0.4*sD)) matched++; }
+    return { matched, total:kc.length, hash, fwd:loc, scale:base.scale, viaBars:!!base.viaBars };
+  }
+
+  const kL=mergeLines(kv||[],4*kD), sL=mergeLines(sv||[],4*sD);
+  const pitchK=median(kc.map(c=>{ let m=1e9; for (const o of kc){ const dx=Math.abs(o.x-c.x); if (o!==c && Math.abs(o.y-c.y)<0.5*kD && dx>0.5*kD && dx<m) m=dx; } return m; }).filter(v=>v<1e8));
+  // ถ้าตารางเลื่อนไป 1 คอลัมน์ วงกลมยังจับคู่ได้เกือบหมด → ลองเลื่อน ±1 คอลัมน์ แล้วเลือกตำแหน่งที่เส้นตั้งตรงกันมากที่สุด
+  function fixShift(base){
+    if (!kL.length || !sL.length || !(pitchK>0)) return base;
+    const pitch=pitchK*base.scale, tol=0.2*pitch; let bestDx=0, bestS=-1;
+    for (const dx of [0,-pitch,pitch]){
+      let sc2=0;
+      for (const l of kL){ const [px,py]=base.gp(l.x,(l.y0+l.y1)/2); if (sL.some(m=>Math.abs(m.x-(px+dx))<=tol && Math.abs((m.y0+m.y1)/2-py)<=0.5*(m.len+l.len))) sc2+=l.len; }
+      if (sc2>bestS){ bestS=sc2; bestDx=dx; }
+    }
+    return bestDx ? { ...base, gp:(x,y)=>{ const [gx,gy]=base.gp(x,y); return [gx+bestDx,gy]; } } : base;
+  }
+  let best=null;
+  // วงกลมเรียงเป็นตารางซ้ำๆ จึงเลื่อนไป 1 คอลัมน์แล้วยังจับคู่ได้เกือบเท่าเดิม — จึงเชื่อแถบดำ (ไม่ซ้ำกัน) ก่อน
+  // ใช้ affine เมื่อแถบอ่านไม่ได้ หรือผลจากแถบแย่ชัดเจน
+  for (const f of [byBars,byAffine]){
+    let b=f(); if (!b) continue; b=fixShift(b); const r=refine(b);
+    if (!best || r.matched>best.matched+0.1*kc.length) best=r;
+    if (best.matched>=0.85*kc.length) break;
+  }
+  return best;
+}
+
+/* ---------- ตรวจกระดาษคำตอบ 1 หน้า ---------- */
+function gradeStudent(an, page){
+  const K=S.key, reasons=[], rec={ page, quarter:an.quarter, angle:an.angle, info:{}, raw:{}, given:{}, cells:[], score:0, reasons };
+  const al = an.det.circles.length>=10 ? alignPoints(K.circles,K.D,an.det.circles,an.det.D,S.keyAn.bars,an.bars,S.keyAn.det.vlines,an.det.vlines) : null;
+  if (!al){ reasons.push('หาวงกลมในหน้านี้ไม่พบ / จัดภาพไม่ได้'); rec.status='check'; rec.fail=true; return rec; }
+  rec.align=al.matched/al.total;
+  if (rec.align<0.6) reasons.push(`จัดภาพไม่แน่ใจ (จับคู่วงกลมได้ ${Math.round(rec.align*100)}%)`);
+  const sc=al.scale, D=K.D*sc, offs=makeOffsets(0.3*D), scores=[];
+  // กรอบบล็อก: จัดกลุ่มวงกลมของใบนี้เป็นบล็อกแบบเดียวกับเฉลย แล้วจับคู่ "บล็อกต่อบล็อก" (ขนาดแถว×คอลัมน์เท่ากัน + ใกล้ตำแหน่งที่คาดไว้)
+  // ช่องที่ i,j ของเฉลย = ช่อง i,j ของบล็อกนั้นเสมอ จึงไม่เลื่อนไป 1 แถว/คอลัมน์ ถ้าหาบล็อกที่ขนาดตรงกันไม่ได้ ใช้ตำแหน่งที่แปลงมาแทน
+  const sBlocks=buildBlocks(an.det.circles,an.det.D,an.det.vlines), used=new Set(), frame=new Map(), pitch=K.D*1.3*sc;
+  K.blocks.forEach((b,i)=>{
+    const [px,py]=al.fwd(b.cx,b.cy); let best=-1, bd=3*pitch;
+    sBlocks.forEach((t,j)=>{ if (used.has(j)||t.rows.length!==b.rows.length||t.cols.length!==b.cols.length) return; const d=Math.hypot(t.cx-px,t.cy-py); if (d<bd){ bd=d; best=j; } });
+    if (best>=0){ used.add(best); frame.set(i,sBlocks[best]); }
+  });
+  rec.frames=frame.size+'/'+K.blocks.length;
+  const grid=K.blocks.map((b,bi)=>b.cells.map((row,r)=>row.map((c,cc)=>{
+    const fb=frame.get(bi); let x,y;
+    if (fb){ x=fb.cells[r][cc].x; y=fb.cells[r][cc].y; }
+    else { const [px,py]=al.fwd(c.x,c.y), m=nearest(al.hash,px,py,0.4*D); x=m?m.x:px; y=m?m.y:py; }
+    const s=measure(an.prep,x,y,offs); scores.push(s); return { x, y, s };
+  })));
+  const base=median(scores);
+  grid.forEach(g=>g.forEach(r=>r.forEach(c=>{ c.delta=c.s-base; c.m=false; c.state='blank'; })));
+  const bIdx=new Map(K.blocks.map((b,i)=>[b,i]));
+
+  rec.hl=[]; const hlBox=cs=>{ const R=D/2*1.25; rec.hl.push({ x0:Math.min(...cs.map(c=>c.x))-R, x1:Math.max(...cs.map(c=>c.x))+R, y0:Math.min(...cs.map(c=>c.y))-R, y1:Math.max(...cs.map(c=>c.y))+R }); };
+  // บล็อกข้อมูลผู้สอบ: ตำแหน่งแถวที่ฝนในแต่ละคอลัมน์ = ตัวเลข
+  for (const b of K.infos){
+    if (!b.use) continue;
+    const g=grid[bIdx.get(b)], missC=[], multiC=[]; let val='';
+    for (let c=0;c<b.cols.length;c++){
+      const col=g.map(r=>r[c].delta), idx=pick(col,P.thr);
+      if (idx.length===1){ val+=idx[0]; g[idx[0]][c].m=true; g[idx[0]][c].state='mark'; }
+      else if (idx.length===0){ val+='?'; missC.push(c+1); hlBox(g.map(r=>r[c])); }
+      else { val+='*'; idx.forEach(i=>{ g[i][c].m=true; g[i][c].state='mark'; }); multiC.push(c+1); hlBox(g.map(r=>r[c])); }
+    }
+    rec.info[b.name]=val;
+    if (missC.length) reasons.push(`${b.name}: หลักที่ ${rng(missC)} ไม่ฝน`);
+    if (multiC.length) reasons.push(`${b.name}: หลักที่ ${rng(multiC)} ฝนหลายช่อง`);
+  }
+  // บล็อกที่เฉลยไม่ฝน: ส่งค่าดิบ
+  for (const b of K.raws){
+    if (!b.use) continue;
+    const g=grid[bIdx.get(b)], base=b.rows.length>=10?0:1; let val='';
+    for (let c=0;c<b.cols.length;c++){      // ต่อคำตอบของแต่ละคอลัมน์เรียงกันเป็นข้อความเดียว (ไม่ฝน = -, หลายช่อง = (a,b))
+      const hit=[]; g.forEach((row,r)=>{ if (row[c].delta>=P.thr){ hit.push(r+base); row[c].m=true; row[c].state='mark'; } });
+      val+=hit.length===0?'-':hit.length===1?hit[0]:`(${hit.join(',')})`;
+    }
+    rec.raw[b.name]=val;
+  }
+  // บล็อกคำตอบ
+  const miss=[], multi=[]; let score=0;
+  for (const b of K.answers){
+    const g=grid[bIdx.get(b)];
+    b.cells.forEach((_,r)=>{
+      const k=b.keyAns[r]; if (k===null){ g[r].forEach(c=>c.state='skip'); return; }
+      const q=b.qStart+r, idx=pick(g[r].map(c=>c.delta),P.thr);
+      idx.forEach(i=>{ g[r][i].m=true; });
+      if (idx.length===1){
+        rec.given[q]=idx[0];
+        if (idx[0]===k){ score++; g[r][k].state='ok'; } else { g[r][idx[0]].state='bad'; g[r][k].state='key'; }
+      } else {
+        rec.given[q]=idx.length?-2:-1;
+        if (idx.length) { multi.push(q); idx.forEach(i=>g[r][i].state='bad'); } else miss.push(q);
+        hlBox(g[r]);
+        g[r][k].state='key';
+      }
+    });
+  }
+  if (miss.length) reasons.push(`ฝนไม่ครบ: ข้อ ${rng(miss)}`);
+  if (multi.length) reasons.push(`ฝนหลายช่อง: ข้อ ${rng(multi)}`);
+  rec.score=score; rec.status=reasons.length?'check':'ok';
+  K.blocks.forEach((b,i)=>b.cells.forEach((row,r)=>row.forEach((_,c)=>{ const x=grid[i][r][c]; rec.cells.push({ x:x.x, y:x.y, m:x.m, st:x.state }); })));
+  rec.R=D/2;
+  return rec;
+}
+
+/* ---------- วาดภาพ ---------- */
+function drawKey(){
+  const an=S.keyAn, K=S.key, cv=$('#keyCanvas'), ctx=cv.getContext('2d');
+  cv.width=an.canvas.width; cv.height=an.canvas.height;
+  if ($('#keyDebug').checked && an.det.d){
+    const id=ctx.createImageData(cv.width,cv.height), d=an.det.d;
+    for (let i=0;i<d.length;i++){ const v=d[i]?30:255; id.data[i*4]=id.data[i*4+1]=id.data[i*4+2]=v; id.data[i*4+3]=255; }
+    ctx.putImageData(id,0,0);
+  } else ctx.drawImage(an.canvas,0,0);
+  const R=K.D/2, lw=Math.max(2,K.D/10), col={answer:'#2563eb',info:'#9333ea',raw:'#ea580c'};
+  for (const b of K.blocks){
+    b.cells.forEach(row=>row.forEach(c=>{
+      const on=c.delta>=P.thr; ctx.beginPath(); ctx.arc(c.x,c.y,R*.95,0,7);
+      if (on){ ctx.fillStyle='rgba(34,197,94,.5)'; ctx.fill(); ctx.strokeStyle='#16a34a'; } else ctx.strokeStyle=c.det?'rgba(110,110,110,.75)':'#dc2626';
+      ctx.lineWidth=lw; ctx.stroke();
+    }));
+    const x0=b.cols[0]-R*1.4, y0=b.rows[0]-R*1.4, x1=b.cols[b.cols.length-1]+R*1.4, y1=b.rows[b.rows.length-1]+R*1.4;
+    const off=!b.use, bc=off?'#9ca3af':col[b.type];
+    if (off){ ctx.fillStyle='rgba(235,235,235,.8)'; ctx.fillRect(x0,y0,x1-x0,y1-y0); }   // ไม่เลือก = ทับสีเทา
+    ctx.strokeStyle=bc; ctx.lineWidth=lw*1.5; ctx.strokeRect(x0,y0,x1-x0,y1-y0);
+    const label = (b.type==='answer' ? `ข้อ ${b.qStart}–${b.qStart+b.rows.length-1}` : b.name)+(off?' · ไม่เลือก':'');
+    ctx.font=`bold ${Math.round(K.D*.7)}px sans-serif`; const tw=ctx.measureText(label).width+10;
+    ctx.fillStyle=bc; ctx.fillRect(x0,y0-K.D*.95,tw,K.D*.95); ctx.fillStyle='#fff'; ctx.textBaseline='middle'; ctx.fillText(label,x0+5,y0-K.D*.47);
+  }
+}
+async function drawStudent(rec){
+  const cv=$('#detCanvas'), ctx=cv.getContext('2d');
+  let c=rotateQuarter(await S.stuSrc.render(rec.page), rec.quarter/90); if (rec.angle) c=rotateCanvas(c,rec.angle);
+  cv.width=c.width; cv.height=c.height; ctx.drawImage(c,0,0);
+  if (!rec.cells.length) return;
+  const R=rec.R*.95, lw=Math.max(2,R/5), K=S.key; let i=0;
+  const style={ ok:['rgba(34,197,94,.5)','#16a34a'], bad:['rgba(220,38,38,.45)','#dc2626'], key:[null,'#2563eb'], mark:['rgba(147,51,234,.5)','#9333ea'], blank:[null,'rgba(150,150,150,.6)'], skip:[null,'rgba(150,150,150,.35)'] };
+  ctx.save(); ctx.globalCompositeOperation='multiply';   // ไฮไลต์เหลืองสะท้อนแสง วางใต้วงที่ฝนให้ยังเห็นรอยฝน
+  for (const h of rec.hl||[]){ ctx.fillStyle='rgba(255,240,0,.75)'; ctx.fillRect(h.x0,h.y0,h.x1-h.x0,h.y1-h.y0); ctx.strokeStyle='rgba(255,200,0,.95)'; ctx.lineWidth=Math.max(3,R/3); ctx.strokeRect(h.x0,h.y0,h.x1-h.x0,h.y1-h.y0); }
+  ctx.restore();
+  for (const cell of rec.cells){ const [fill,stroke]=style[cell.st]||style.blank; ctx.beginPath(); ctx.arc(cell.x,cell.y,R,0,7); if(fill){ctx.fillStyle=fill;ctx.fill();} ctx.strokeStyle=stroke; ctx.lineWidth=cell.st==='key'?lw*1.4:lw; ctx.stroke(); }
+}
+
+/* ---------- UI: ขั้นที่ 1 ---------- */
+function showAlert(el, kind, text){ el.innerHTML=`<div class="alert ${kind}">${text}</div>`; }
+/* ปรับค่าแล้วอัปเดตเฉลยทันที (ink = หาวงกลมใหม่ ช้ากว่า จึงหน่วงเวลาเล็กน้อย) */
+let liveTimer=null, liveBusy=false, livePending=null;
+function live(kind){
+  if (!S.keyRaw){ clearTimeout(liveTimer); liveTimer=setTimeout(()=>{ demoUpdate(kind==='ink'); drawPreview(); }, 30); return; }
+  livePending = (livePending==='ink'||kind==='ink') ? 'ink' : kind;
+  clearTimeout(liveTimer); liveTimer=setTimeout(runLive, kind==='ink'?200:30);
+}
+async function runLive(){
+  if (liveBusy){ liveTimer=setTimeout(runLive,100); return; }
+  const kind=livePending; livePending=null; liveBusy=true;
+  try{
+    if (kind==='ink'){
+      const an=analyze(S.keyRaw,true);
+      if (an.det.circles.length<20){ $('#prevBox').hidden=false; $('#prevCap').textContent=`ค่านี้หาวงกลมได้เพียง ${an.det.circles.length} ช่อง — ลองปรับความไวใหม่`; return; }
+      S.keyAn=an;
+    }
+    if (S.keyAn){ S.key=buildKey(); renderKey(); }
+  } finally { liveBusy=false; if (livePending) live(livePending); }
+}
+/* ภาพสาธิต (ก่อนอัปโหลดเฉลย): วาดวงกลม 5×5 พร้อมรอยฝนหลายระดับ แล้วใช้ตัวอ่านเดียวกับของจริง */
+const DEMO={ canvas:null, an:null, K:null };
+function makeDemoCanvas(){
+  const c=document.createElement('canvas'); c.width=800; c.height=420; const x=c.getContext('2d',{willReadFrequently:true});
+  x.fillStyle='#fdfdfb'; x.fillRect(0,0,800,420);
+  const px=c2=>60+c2*24, py=r=>60+r*22, Rr=8;
+  x.font='8px sans-serif'; x.textAlign='center'; x.textBaseline='middle';
+  for (let r=0;r<5;r++) for (let k=0;k<5;k++){
+    const faint=k===4;   // คอลัมน์ขวาสุด: วงกลมจาง (เลียนแบบเส้นพิมพ์จางหรือสแกนอ่อน)
+    x.beginPath(); x.arc(px(k),py(r),Rr,0,7); x.lineWidth=1.3; x.strokeStyle=faint?'rgb(195,226,208)':'rgb(110,185,140)'; x.stroke();
+    x.fillStyle=faint?'rgb(195,226,208)':'rgb(90,170,120)'; x.fillText(String(k+1),px(k),py(r)+.5);
+  }
+  const mark=(r,k,a)=>{ x.beginPath(); x.arc(px(k),py(r),Rr+.4,0,7); x.fillStyle=`rgba(70,70,70,${a})`; x.fill(); };
+  mark(0,1,.85);   // ฝนเข้ม
+  mark(1,2,.45);   // ฝนปานกลาง
+  mark(2,3,.22);   // ฝนจาง
+  mark(3,0,.85); mark(3,2,.12);   // ฝนเข้ม + รอยลบจางๆ ในข้อเดียวกัน
+  return c;
+}
+function demoUpdate(redetect){
+  if (!DEMO.canvas) DEMO.canvas=makeDemoCanvas();
+  if (redetect||!DEMO.an) DEMO.an=analyze(DEMO.canvas,true);
+  DEMO.K = DEMO.an.det.circles.length>=5 ? analyzeKey(DEMO.an) : null;
+}
+/* กล่องตัวอย่าง: ตัดภาพบางส่วนของบล็อกแรก แสดงภาพจริงเทียบกับสิ่งที่โปรแกรมมองเห็น */
+function drawPreview(){
+  const real=!!(S.keyAn&&S.key), box=$('#prevBox');
+  if (!real&&!DEMO.an) demoUpdate(true);
+  const an=real?S.keyAn:DEMO.an, K=real?S.key:DEMO.K;
+  box.hidden=false;
+  if (!K){ $('#prevCv').width=1; $('#prevCap').textContent='ค่านี้หาวงกลมไม่เจอเลย — ลองลดหรือเพิ่มความไวต่อขอบวงกลม'; return; }
+  const b=K.answers[0]||K.blocks[0], D=K.D, r1=Math.min(b.rows.length-1,5);
+  const x0=Math.max(0,b.cols[0]-1.4*D), y0=Math.max(0,b.rows[0]-1.4*D);
+  const x1=Math.min(an.canvas.width,b.cols[b.cols.length-1]+1.4*D), y1=Math.min(an.canvas.height,b.rows[r1]+1.4*D);
+  const w=Math.round(x1-x0), h=Math.round(y1-y0), sc=Math.min(3,330/w), pw=Math.round(w*sc), ph=Math.round(h*sc);
+  const cv=$('#prevCv'); cv.width=pw*2+12; cv.height=ph; const ctx=cv.getContext('2d');
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,cv.width,cv.height);
+  ctx.drawImage(an.canvas,x0,y0,w,h,0,0,pw,ph);                       // ซ้าย: ภาพจริง
+  const R=D/2*sc*0.95, lw=Math.max(1.5,R/6);
+  let on=0;
+  for (const row of b.cells.slice(0,r1+1)) for (const c of row){
+    const m=c.delta>=P.thr; if (m) on++;
+    ctx.beginPath(); ctx.arc((c.x-x0)*sc,(c.y-y0)*sc,R,0,7);
+    if (m){ ctx.fillStyle='rgba(34,197,94,.5)'; ctx.fill(); ctx.strokeStyle='#16a34a'; } else ctx.strokeStyle='rgba(110,110,110,.8)';
+    ctx.lineWidth=lw; ctx.stroke();
+  }
+  if (an.det.d){                                                       // ขวา: ภาพ binary ของตัวหาวงกลม
+    const t=document.createElement('canvas'); t.width=w; t.height=h; const tc=t.getContext('2d'), id=tc.createImageData(w,h), W=an.canvas.width;
+    for (let y=0;y<h;y++) for (let x=0;x<w;x++){ const v=an.det.d[(Math.round(y0)+y)*W+Math.round(x0)+x]?40:255, i=(y*w+x)*4; id.data[i]=id.data[i+1]=id.data[i+2]=v; id.data[i+3]=255; }
+    tc.putImageData(id,0,0); ctx.imageSmoothingEnabled=false; ctx.drawImage(t,0,0,w,h,pw+12,0,pw,ph);
+    ctx.strokeStyle='#16a34a'; ctx.lineWidth=lw;
+    for (const c of K.circles){ if (c.x<x0||c.x>x1||c.y<y0||c.y>y1) continue; ctx.beginPath(); ctx.arc(pw+12+(c.x-x0)*sc,(c.y-y0)*sc,R*1.12,0,7); ctx.stroke(); }
+  }
+  const tot=b.cells.slice(0,r1+1).reduce((a,r)=>a+r.length,0);
+  $('#prevCap').textContent = real
+    ? `ตัวอย่างนี้: ฝน ${on} จาก ${tot} ช่อง · ทั้งหน้าพบวงกลม ${K.circles.length} ช่อง · คะแนนเต็ม ${K.graded.length} ข้อ`
+    : `ภาพสาธิต (ยังไม่ได้อัปโหลดเฉลย) — แถว 1 ฝนเข้ม · แถว 2 ปานกลาง · แถว 3 จาง · แถว 4 ฝนเข้ม + รอยลบจางๆ · คอลัมน์ขวาสุด = วงกลมจาง · ตอนนี้ฝน ${on} ช่อง, พบวงกลม ${K.circles.length} จาก 25 ช่อง`;
+}
+function renderKey(){
+  const K=S.key; $('#keyOut').hidden=false;
+  const parts=[`พบวงกลม <b>${K.circles.length}</b> ช่อง ขนาดประมาณ ${K.D.toFixed(0)} px แบ่งเป็น <b>${K.blocks.length}</b> บล็อก`,
+    `บล็อกคำตอบ ${K.answers.length} · บล็อกข้อมูลผู้สอบ ${K.infos.length} · ช่องดิบ ${K.raws.length}`,
+    `<b>คะแนนเต็ม = ${K.graded.length} ข้อ</b> (อ่านได้จากเฉลย จากทั้งหมด ${K.nq} ข้อในฟอร์ม)`,
+    S.keyAn.strip.found ? `หมุนภาพอัตโนมัติ ${S.keyAn.quarter}° ตามแถบสี่เหลี่ยมดำ` : '',
+    K.csvInfo||''].filter(Boolean);
+  $('#keyMsg').innerHTML=`<div class="alert ok">${parts.join('<br>')}</div>`+K.warns.map(w=>/^(ยังไม่มีเฉลย|CSV ไม่มีเฉลย)/.test(w)?`<div class="alert ok">ℹ ${esc(w)}</div>`:`<div class="alert warn">⚠ ${esc(w)}</div>`).join('');
+  const typeName={answer:'คำตอบ',info:'ข้อมูลผู้สอบ',raw:'ช่องดิบ (เฉลยไม่ฝน)'};
+  const all=[...K.answers,...K.others];
+  const typeOpt=b=>`<select data-t="${all.indexOf(b)}"><option value="raw"${b.type==='raw'?' selected':''}>ช่องดิบ (บอกตำแหน่งที่ฝน)</option><option value="info"${b.type==='info'?' selected':''}>อ่านเป็นรหัส (เลข 0–9 ต่อคอลัมน์)</option></select>`;
+  $('#blkBody').innerHTML=all.map((b,i)=>`<tr><td>${i+1}</td><td>${b.type==='answer'?typeName.answer:typeOpt(b)}</td><td>${b.rows.length} แถว × ${b.cols.length} คอลัมน์${b.type==='answer'?`<br><span class="mut">ข้อ ${b.qStart}–${b.qStart+b.rows.length-1}</span>`:''}</td><td><input type="checkbox" data-u="${i}"${b.use?' checked':''}></td><td>${b.type==='answer'?'<span class="mut">คะแนน</span>':`<input type="text" data-i="${i}" value="${esc(b.name)}" size="22">`}</td></tr>`).join('');
+  $('#blkBody').oninput=e=>{ const i=e.target.dataset.i; if (i!==undefined){ all[i].name=e.target.value; drawKey(); renderResults(); } };
+  $('#blkBody').onchange=e=>{
+    const u=e.target.dataset.u, t=e.target.dataset.t;
+    if (u!==undefined){ all[u].use=e.target.checked; if (all[u].type==='answer') toggledAnswer(); else { drawKey(); renderResults(); } }
+    else if (t!==undefined){   // เปลี่ยนวิธีอ่านบล็อก → ต้องตรวจกระดาษใหม่
+      const b=all[t]; b.type=e.target.value; b.missing=[]; b.idRow=null; b.use=true;
+      const byPos=(x,y)=>x.cols[0]-y.cols[0]||x.rows[0]-y.rows[0];
+      K.infos=K.blocks.filter(x=>x.type==='info').sort(byPos); K.raws=K.blocks.filter(x=>x.type==='raw').sort(byPos);
+      S.results=[]; $('#stuOut').hidden=true; renderKey();
+    }
+  };
+  const byQ=new Map(K.graded.map(g=>[g.q,g.col])), nOpt=Math.max(...K.answers.map(b=>b.cols.length));
+  $('#ansCount').textContent=`(${K.graded.length} ข้อ · แก้ไขได้ ช่องสีเหลืองคือข้อที่แก้เอง)`;
+  $('#ansGrid').innerHTML=Array.from({length:K.nq},(_,i)=>i+1).map(q=>{
+    const has=byQ.has(q), cur=has?byQ.get(q):-1;
+    return `<div class="${has?'':'none'}${K.edits&&K.edits.has(q)?' edit':''}"><span>${q}</span><select data-q="${q}"><option value="-1"${cur<0?' selected':''}>–</option>${Array.from({length:nOpt},(_,i)=>`<option value="${i}"${cur===i?' selected':''}>${esc(optLabel(i))}</option>`).join('')}</select></div>`;
+  }).join('');
+  $('#ansGrid').onchange=e=>{ const q=+e.target.dataset.q; if (q) editAnswer(q,+e.target.value); };
+  $('#keyViewer').style.setProperty('--zoom',$('#keyZoom').value);
+  drawKey(); drawPreview(); setConfirmed(false);
+}
+// แก้เฉลยเองในตาราง (กรณีเฉลยฝนผิด ไม่ต้องสแกนใหม่) — ค่า -1 = ไม่นำมาคิดคะแนน
+function recomputeGraded(K){
+  K.graded=[]; K.ungraded=[];
+  for (const b of K.answers) if (b.use!==false) b.keyAns.forEach((k,i)=>{ if (k===null) K.ungraded.push(b.qStart+i); else K.graded.push({ q:b.qStart+i, b, r:i, col:k }); });
+  K.warns=K.warns.filter(w=>!/^(เฉลยข้อ|ข้อที่เฉลยไม่ฝน|ข้อที่ไม่นำมาคิดคะแนน)/.test(w));
+  if (K.ungraded.length && K.graded.length) K.warns.push(`ข้อที่ไม่นำมาคิดคะแนน: ${rng(K.ungraded)}`);
+}
+/* ---------- เฉลยจากไฟล์ CSV ---------- */
+// แยกข้อความ CSV (, ; หรือ tab, รองรับเครื่องหมายคำพูดและ BOM)
+function parseCsv(text){
+  text=text.replace(/^\uFEFF/,'');
+  const first=text.split(/\r?\n/).find(l=>l.trim())||'', d=[',',';','\t'].map(c=>[c,first.split(c).length]).sort((a,b)=>b[1]-a[1])[0][0];
+  const rows=[]; let row=[], cell='', q=false;
+  for (let i=0;i<text.length;i++){
+    const ch=text[i];
+    if (q){ if (ch==='"'){ if (text[i+1]==='"'){ cell+='"'; i++; } else q=false; } else cell+=ch; }
+    else if (ch==='"') q=true;
+    else if (ch===d){ row.push(cell); cell=''; }
+    else if (ch==='\n'||ch==='\r'){ if (ch==='\r'&&text[i+1]==='\n') i++; row.push(cell); cell=''; if (row.some(c=>c.trim()!=='')) rows.push(row); row=[]; }
+    else cell+=ch;
+  }
+  row.push(cell); if (row.some(c=>c.trim()!=='')) rows.push(row);
+  return rows;
+}
+// ค่าเฉลยหนึ่งช่อง → ตำแหน่งตัวเลือก (0 = ตัวแรก), null = ไม่นับ, undefined = อ่านไม่ได้
+function parseOpt(v){
+  v=String(v??'').trim().replace(/[.\s]+$/,'');
+  if (v===''||/^[-–—]$/.test(v)) return null;
+  if (/^\d+$/.test(v)) return +v-1;
+  const t='กขคงจฉชซฌญ'.indexOf(v); if (t>=0) return t;
+  if (/^[A-Za-z]$/.test(v)) return v.toUpperCase().charCodeAt(0)-65;
+  return undefined;
+}
+function loadCsvKey(text, name){
+  const rows=parseCsv(text), map=new Map(), bad=[];
+  if (!rows.length) throw new Error('ไฟล์ CSV ว่างเปล่า');
+  const twoCol=rows.some(r=>r.length>=2);
+  let start=0; if (!/^\s*\d+\s*$/.test(rows[0][0]||'') && (twoCol||parseOpt(rows[0][0])===undefined)) start=1;   // ข้ามแถวหัวตาราง
+  rows.slice(start).forEach((r,i)=>{
+    const q=twoCol ? parseInt(r[0],10) : i+1, v=parseOpt(twoCol ? r[1] : r[0]);
+    if (!(q>=1)) { bad.push(`แถวที่ ${i+start+1}`); return; }
+    if (v===undefined){ bad.push(`ข้อ ${q}`); return; }
+    map.set(q,v);
+  });
+  if (!map.size) throw new Error('ไม่พบข้อมูลเฉลยใน CSV (ต้องมีคอลัมน์ ข้อ, เฉลย)');
+  return { map, name, bad };
+}
+// นำเฉลยจาก CSV ไปใส่ในเฉลยที่วิเคราะห์ได้ (ข้อที่อยู่ใน CSV ใช้ค่าจาก CSV ข้อที่ไม่อยู่ใน CSV คงเดิม)
+function applyCsv(K){
+  const C=S.csv, over=[], badOpt=[]; let n=0;
+  for (const [q,v] of C.map){
+    const tb=K.answers.find(b=>q>=b.qStart&&q<b.qStart+b.rows.length);
+    if (!tb){ over.push(q); continue; }
+    if (v!==null && v>=tb.cols.length){ badOpt.push(q); continue; }
+    tb.keyAns[q-tb.qStart]=v; n++;
+  }
+  recomputeGraded(K);
+  K.warns=K.warns.filter(w=>!/^ยังไม่มีเฉลย/.test(w));
+  K.csvInfo=`ใช้เฉลยจากไฟล์ CSV "${C.name}" ${n} ข้อ`;
+  if (over.length) K.warns.push(`CSV มีข้อที่เกินจำนวนข้อในฟอร์ม (${K.nq} ข้อ) — ข้าม: ${rng(over)}`);
+  if (badOpt.length) K.warns.push(`CSV: ตัวเลือกไม่มีในฟอร์ม — ข้าม ข้อ ${rng(badOpt)}`);
+  if (C.bad.length) K.warns.push(`CSV: อ่านค่าไม่ได้ — ข้าม ${C.bad.slice(0,8).join(', ')}${C.bad.length>8?' …':''}`);
+  if (K.nq && !K.graded.length) K.warns.push('CSV ไม่มีเฉลยที่ใช้ได้เลย');
+}
+function buildKey(){ const K=analyzeKey(S.keyAn); if (S.csv) applyCsv(K); return K; }
+function downloadSampleCsv(){
+  const K=S.key, n=K&&K.nq?K.nq:10, byQ=new Map(K?K.graded.map(g=>[g.q,g.col]):[]);
+  const lines=['ข้อ,เฉลย']; for (let q=1;q<=n;q++) lines.push(`${q},${K?(byQ.has(q)?byQ.get(q)+1:''):(q*3)%5+1}`);
+  const url=URL.createObjectURL(new Blob(['\uFEFF'+lines.join('\r\n')+'\r\n'],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a'); a.href=url; a.download=K?'omr-answer-key.csv':'omr-answer-key-sample.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function editAnswer(q, col){
+  const K=S.key; let qs=1, tb=null, r=0;
+  for (const b of K.answers){ if (q>=b.qStart && q<b.qStart+b.rows.length){ tb=b; r=q-b.qStart; } }
+  if (!tb) return;
+  if (col>=tb.cols.length) col=-1;
+  tb.keyAns[r]= col<0 ? null : col;
+  K.edits=K.edits||new Set(); K.edits.add(q);
+  recomputeGraded(K);
+  S.results=[]; $('#stuOut').hidden=true; renderKey();
+}
+// เลือก/ไม่เลือกบล็อกคำตอบ → คิดคะแนนใหม่ ต้องตรวจกระดาษใหม่
+function toggledAnswer(){ recomputeGraded(S.key); S.results=[]; $('#stuOut').hidden=true; renderKey(); }
+function setConfirmed(v){
+  S.confirmed=v; $('#s2').classList.toggle('locked',!v);
+  $('#confirmKey').textContent=v?'✓ ยืนยันแล้ว':'ยืนยันเฉลย'; $('#confirmKey').disabled=v;
+  $('#confirmNote').textContent=v?'ไปขั้นที่ 2 ได้เลย — ถ้าแก้ไขการตั้งค่า ต้องวิเคราะห์เฉลยและยืนยันใหม่':'ตรวจเทียบกับกระดาษจริงก่อนกดยืนยัน';
+}
+async function runKey(){
+  const msg=$('#keyMsg'); $('#keyOut').hidden=false; showAlert(msg,'ok','กำลังวิเคราะห์เฉลย…'); await tick();
+  try{
+    if (!S.keyRaw){ const src=await openSource(S.keyFile); S.keyRaw=await src.render(1); S.keyPages=src.n; }
+    S.keyAn=analyze(S.keyRaw,true); await tick();
+    if (S.keyAn.det.circles.length<20){
+      S.key=null; setConfirmed(false); $('#keyOut').hidden=false;
+      showAlert(msg,'bad',`พบวงกลมเพียง ${S.keyAn.det.circles.length} ช่อง — ลองเพิ่ม "ความไวต่อขอบวงกลม" ในตั้งค่าขั้นสูง หรือสแกนที่ความละเอียด ≥200 dpi`);
+      const cv=$('#keyCanvas'); cv.width=S.keyAn.canvas.width; cv.height=S.keyAn.canvas.height; cv.getContext('2d').drawImage(S.keyAn.canvas,0,0); return;
+    }
+    S.key=buildKey(); renderKey();
+    if (S.keyPages>1) msg.insertAdjacentHTML('beforeend',`<div class="alert warn">ไฟล์เฉลยมี ${S.keyPages} หน้า — ใช้เฉพาะหน้าแรก</div>`);
+  }catch(e){ console.error(e); showAlert(msg,'bad',esc(e.message||e)); }
+}
+$('#keyFile').onchange=async e=>{
+  const f=e.target.files[0]; if (!f) return;
+  S.keyFile=f; S.keyRaw=null; $('#keyName').textContent=f.name; $('#reKey').disabled=false;
+  S.results=[]; $('#stuOut').hidden=true; await runKey();
+};
+// ฟอร์ม SCI มาตรฐานที่แนบมา (กระดาษเปล่า) → ใช้เป็นภาพบอกโครงสร้าง แล้วให้อัปโหลด CSV เฉลย
+$('#sciForm').onclick=async()=>{
+  if (!window.SCI_FORM_B64){ alert('ไม่พบไฟล์ asset/sci-form.js — ต้องเก็บโฟลเดอร์ asset/ ไว้ข้างไฟล์นี้'); return; }
+  const bin=atob(window.SCI_FORM_B64), u=new Uint8Array(bin.length); for (let i=0;i<bin.length;i++) u[i]=bin.charCodeAt(i);
+  S.keyFile=new File([u],'SCI-answer-sheet.pdf',{type:'application/pdf'}); S.keyRaw=null;
+  $('#keyName').textContent='ฟอร์ม SCI มาตรฐาน (กระดาษเปล่า) — อัปโหลด CSV เฉลยต่อได้เลย'; $('#reKey').disabled=false;
+  S.results=[]; $('#stuOut').hidden=true; await runKey();
+};
+$('#reKey').onclick=()=>{ S.keyRaw=null; runKey(); };
+function csvChanged(){
+  $('#csvClear').hidden=!S.csv;
+  $('#csvName').textContent=S.csv?`CSV: ${S.csv.name} (${S.csv.map.size} ข้อ)${S.keyAn?'':' — จะใช้เมื่อเลือกไฟล์เฉลย'}`:'ถ้ามี CSV เฉลย ใช้ร่วมกับกระดาษเปล่า (ไม่ฝน) ได้ โปรแกรมใช้ภาพแค่บอกโครงสร้างฟอร์ม · คอลัมน์: ข้อ, เฉลย (1–5 / ก–จ / A–E, ว่าง = ไม่นับ)';
+  if (S.keyAn && S.keyAn.det.circles.length>=20){ S.key=buildKey(); S.results=[]; $('#stuOut').hidden=true; renderKey(); }
+}
+$('#csvFile').onchange=async e=>{
+  const f=e.target.files[0]; e.target.value=''; if (!f) return;
+  try{ S.csv=loadCsvKey(await f.text(), f.name); csvChanged(); }
+  catch(err){ $('#csvName').textContent='อ่าน CSV ไม่ได้: '+(err.message||err); }
+};
+$('#guideBtn').onclick=()=>{ const g=$('#guide'); g.hidden=!g.hidden; $('#guideBtn').setAttribute('aria-expanded',String(!g.hidden)); $('#guideBtn').textContent=g.hidden?'📖 คู่มือการใช้':'✕ ปิดคู่มือ'; };
+$('#csvClear').onclick=()=>{ S.csv=null; csvChanged(); };
+$('#csvSample').onclick=downloadSampleCsv;
+$('#confirmKey').onclick=()=>{ setConfirmed(true); $('#s2').scrollIntoView({behavior:'smooth'}); };
+$('#keyZoom').onchange=e=>$('#keyViewer').style.setProperty('--zoom',e.target.value);
+$('#keyDebug').onchange=()=>{ if (S.keyAn) drawKey(); };
+// คลิกกรอบบล็อก (ม่วง/ส้ม) ในภาพเฉลยเพื่อเลือก/ไม่เลือกบล็อกนั้น (ไม่เลือก = สีเทา ไม่ใส่ใน CSV)
+function blockAt(ev){
+  if (!S.key) return null;
+  const cv=$('#keyCanvas'), r=cv.getBoundingClientRect(), x=(ev.clientX-r.left)*cv.width/r.width, y=(ev.clientY-r.top)*cv.height/r.height, R=S.key.D/2*1.4;
+  return [...S.key.others,...S.key.answers].find(b=>x>=b.cols[0]-R && x<=b.cols[b.cols.length-1]+R && y>=b.rows[0]-R && y<=b.rows[b.rows.length-1]+R)||null;
+}
+$('#keyCanvas').onmousemove=e=>{ e.target.style.cursor=blockAt(e)?'pointer':''; };
+$('#keyCanvas').onclick=e=>{
+  const b=blockAt(e); if (!b) return;
+  b.use=!b.use;
+  if (b.type==='answer'){ toggledAnswer(); return; }
+  drawKey();
+  const ck=document.querySelector(`#blkBody input[data-u="${[...S.key.answers,...S.key.others].indexOf(b)}"]`); if (ck) ck.checked=b.use;
+  renderResults();
+};
+$('#pDpi').onchange=e=>{ P.dpi=+e.target.value; if (S.keyFile){ S.keyRaw=null; } };
+$('#pInk').oninput=e=>{ P.ink=+e.target.value; $('#vInk').textContent=P.ink.toFixed(2); live('ink'); };
+$('#pThr').oninput=e=>{ P.thr=+e.target.value; $('#vThr').textContent=Math.round(P.thr*100)+'%'; live('thr'); };
+$('#pOpt').onchange=e=>{ P.opt=e.target.value; if (S.key) renderKey(); };
+for (const id of ['#pDpi']) $(id).addEventListener('change',()=>{ if (S.keyFile) runKey(); });
+
+/* ---------- UI: ขั้นที่ 2 ---------- */
+function columns(){
+  const K=S.key; return { other:K.others.filter(b=>b.use).map(b=>b.name), qs:K.graded.map(g=>g.q) };
+}
+function renderResults(){
+  if (!S.key || !S.results.length && $('#stuOut').hidden) return;
+  const K=S.key, cols=columns(), only=$('#onlyFlag').checked;
+  const head=['หน้า',...cols.other,'คะแนน','สถานะ'];
+  $('#colPreview').innerHTML=['ลำดับหน้า PDF',...cols.other,'คะแนนรวม','คะแนนเต็ม ('+K.graded.length+')','สถานะ',`ข้อ ${cols.qs[0]??''} … ข้อ ${cols.qs[cols.qs.length-1]??''} (${cols.qs.length} คอลัมน์)`].map(x=>`<span class="chip">${esc(x)}</span>`).join('');
+  $('#resHead').innerHTML='<tr>'+head.map(h=>`<th>${esc(h)}</th>`).join('')+'</tr>';
+  $('#resBody').innerHTML=S.results.map((r,i)=>({r,i})).filter(({r})=>!only||r.status!=='ok').map(({r,i})=>{
+    const badge=r.status==='ok'?'<span class="badge ok">ปกติ</span>':`<span class="badge ${r.fail?'bad':'warn'}">ต้องตรวจซ้ำ</span> <span class="mut">${esc(r.reasons.join(' · '))}</span>`;
+    return `<tr class="click ${i===S.sel?'sel':''}" data-i="${i}"><td>${r.page}</td>${cols.other.map(n=>`<td>${esc(r.info?.[n]??r.raw?.[n]??'')}</td>`).join('')}<td>${r.fail?'–':`${r.score}/${K.graded.length}`}</td><td>${badge}</td></tr>`;
+  }).join('');
+  const flagged=S.results.filter(r=>r.status!=='ok').length, okR=S.results.filter(r=>!r.fail);
+  $('#sumLine').textContent=`ตรวจแล้ว ${S.results.length} หน้า · ต้องตรวจซ้ำ ${flagged} ใบ`+(okR.length?` · คะแนนเฉลี่ย ${(okR.reduce((a,r)=>a+r.score,0)/okR.length).toFixed(1)}/${K.graded.length}`:'');
+}
+$('#resBody').onclick=e=>{ const tr=e.target.closest('tr[data-i]'); if (tr) openDetail(+tr.dataset.i); };
+$('#onlyFlag').onchange=renderResults;
+async function openDetail(i){
+  if (i<0||i>=S.results.length) return; S.sel=i; const r=S.results[i];
+  $('#detail').hidden=false; $('#detTitle').textContent=`หน้า ${r.page}`+(r.fail?'':` — ${r.score}/${S.key.graded.length}`);
+  $('#detReasons').innerHTML=r.reasons.length?`<div class="alert warn">⚠ ${esc(r.reasons.join(' · '))}</div>`:'<div class="alert ok">ไม่พบสิ่งผิดปกติ</div>';
+  document.querySelectorAll('#resBody tr').forEach(t=>t.classList.toggle('sel',+t.dataset.i===i));
+  await drawStudent(r); $('#detail').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+$('#detClose').onclick=()=>{ $('#detail').hidden=true; S.sel=-1; renderResults(); };
+$('#detPrev').onclick=()=>openDetail(S.sel-1);
+$('#detNext').onclick=()=>openDetail(S.sel+1);
+
+$('#stuFile').onchange=async e=>{
+  const f=e.target.files[0]; if (!f||!S.key) return;
+  $('#stuName').textContent=f.name; S.results=[]; S.sel=-1; $('#detail').hidden=true;
+  const bar=$('#stuBar'), prog=$('#stuProg'); bar.hidden=false; $('#stuOut').hidden=false;
+  try{
+    S.stuSrc=await openSource(f); const n=S.stuSrc.n, t0=performance.now();
+    for (let p=1;p<=n;p++){
+      prog.textContent=`กำลังตรวจหน้า ${p} / ${n}…`; bar.firstElementChild.style.width=((p-1)/n*100)+'%'; await tick();
+      try{ S.results.push(gradeStudent(analyze(await S.stuSrc.render(p),false),p)); }
+      catch(err){ console.error(err); S.results.push({ page:p, status:'check', fail:true, reasons:['เกิดข้อผิดพลาด: '+err.message], info:{}, raw:{}, given:{}, cells:[] }); }
+      if (p%3===0||p===n) renderResults();
+    }
+    bar.firstElementChild.style.width='100%';
+    prog.textContent=`เสร็จแล้ว ${n} หน้า (ใช้เวลา ${((performance.now()-t0)/1000).toFixed(0)} วินาที)`;
+    renderResults();
+  }catch(err){ console.error(err); prog.innerHTML=`<div class="alert bad">${esc(err.message)}</div>`; }
+};
+
+/* ---------- CSV (UTF-8 BOM เปิดใน Excel แล้วภาษาไทยไม่เพี้ยน) ---------- */
+$('#dlCsv').onclick=()=>{
+  const K=S.key, cols=columns(), asText=$('#csvText').checked, mode=$('#csvMode').value;
+  const q=v=>`"${String(v??'').replace(/"/g,'""')}"`, txt=v=>asText&&v!==''?`="${v}"`:q(v);
+  const lines=[[ 'ลำดับหน้า',...cols.other,'คะแนนรวม','คะแนนเต็ม','สถานะ',...cols.qs.map(n=>'ข้อ '+n) ].map(q).join(',')];
+  for (const r of S.results){
+    const ans=cols.qs.map(n=>{
+      const g=r.given?.[n]; if (g===undefined) return '';
+      if (mode==='ok') return +(g===K.graded.find(x=>x.q===n).col);
+      return g===-1?'-':g===-2?'*':optLabel(g);
+    });
+    lines.push([ q(r.page), ...cols.other.map(n=>txt(r.info?.[n]??r.raw?.[n]??'')), q(r.fail?'':r.score), q(K.graded.length),
+      q(r.status==='ok'?'ปกติ':'ต้องตรวจซ้ำ: '+r.reasons.join(' | ')), ...ans.map(q) ].join(','));
+  }
+  const url=URL.createObjectURL(new Blob(['﻿'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}));
+  const a=document.createElement('a'); a.href=url; a.download='omr-results.csv'; a.click(); setTimeout(()=>URL.revokeObjectURL(url),1000);
+};
+drawPreview();
+</script>
+</body>
+</html>
